@@ -9,7 +9,7 @@ module lab2_1(
     reg [5:0] an=0,an_next=0,previous=0,previous_next=0,n=0,n_next=0;
     reg countup=0;
 
-    //flip-flop
+    //flip-flop:only cares about connection and reset,dont update values
     always @(posedge clk,posedge rst) begin
         if(rst==1) begin
             out <= 0;
@@ -26,7 +26,7 @@ module lab2_1(
 
     //combinational logic
     always @(*) begin
-        if(countup) begin    //countup
+        if(countup) begin
             if(n==0) begin
                 an = 0;
             end else if(previous > n) begin
@@ -34,22 +34,21 @@ module lab2_1(
             end else begin
                 an = previous + n;
             end
-        end else begin  //countdown
+        end else begin
             an = previous - ( 1<<(n-1) );
-            //previous = an;
         end
         an_next = an;
         previous_next = an;
-        n_next = n + 1;
+        n_next = n + 1; //remember to increment
     end
     
     always @(*) begin
-        if(an==0 /*|| an==63*/) begin
+        if(an==0) begin
             countup = ~countup;
+            n=0;
+        end else if(n==58) begin
+            countup = ~countup;
+            n=1;
         end
-    end
-
-    initial begin
-        $monitor($time,": an=%d, an_next=%d, previous=%d, previous_next=%d, n=%d, n_next=%d, countup=%d",an,an_next,previous,previous_next,n,n_next,countup);
     end
 endmodule
