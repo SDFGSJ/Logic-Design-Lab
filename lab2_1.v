@@ -13,9 +13,15 @@ module lab2_1(
     always @(posedge clk,posedge rst) begin
         if(rst==1) begin
             out <= 0;
+
             an <= 0;
             previous <= 0;
             n <= 0;
+            an_next<=0;
+            previous_next<=0;
+            n_next<=0;
+
+            countup <= 0;
         end else begin
             out <= an_next;
             an <= an_next;
@@ -27,7 +33,7 @@ module lab2_1(
     //combinational logic
     always @(*) begin
         if(countup) begin
-            if(n==0) begin
+            if(n == 0) begin
                 an = 0;
             end else if(previous > n) begin
                 an = previous - n;
@@ -43,12 +49,12 @@ module lab2_1(
     end
     
     always @(*) begin
-        if(an==0) begin
+        if(an == 0) begin
             countup = ~countup;
-            n=0;
-        end else if(n==58) begin
+            n = 0;
+        end else if(n == 58) begin
             countup = ~countup;
-            n=1;
+            n = 1;
         end
     end
 endmodule
