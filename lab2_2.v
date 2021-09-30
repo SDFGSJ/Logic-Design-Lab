@@ -14,12 +14,7 @@ module lab2_2(
     reg [1:0] lightA_green_cycle=0,lightB_green_cycle=0;
     reg [1:0] lightA_green_cycle_next=0,lightB_green_cycle_next=0;
     
-
-    /*initial begin
-        $monitor($time,": clk=%d, rst=%d, carA=%d, carB=%d, lightA=%d, lightB=%d, lightA_green_cycle=%d, lightB_green_cycle=%d",clk,rst,carA,carB,lightA,lightB,lightA_green_cycle,lightB_green_cycle);
-    end*/
-
-
+    //flip-flop
     always @(posedge clk,posedge rst) begin
         if(rst) begin
             lightA<=GREEN;
@@ -39,7 +34,7 @@ module lab2_2(
         end
     end
 
-
+    //combinational block
     always @(*) begin
         if({carA,carB}==2'b01) begin
             if({lightA,lightB}=={GREEN,RED}) begin
@@ -53,11 +48,9 @@ module lab2_2(
                 lightA_next=RED;
                 lightB_next=GREEN;
                 lightA_green_cycle_next=0;
-                //maybe reset lightA_green_cycle here
             end else if({lightA,lightB}=={RED,GREEN}) begin
                 lightA_next=RED;
                 lightB_next=GREEN;
-                //maybe reset lightA_green_cycle here
             end
         end else if({carA,carB}==2'b10) begin
             if({lightA,lightB}=={RED,GREEN}) begin
@@ -71,13 +64,11 @@ module lab2_2(
                 lightA_next=GREEN;
                 lightB_next=RED;
                 lightB_green_cycle_next=0;
-                //maybe reset lightA_green_cycle here
             end else if({lightA,lightB}=={GREEN,RED}) begin
                 lightA_next=GREEN;
                 lightB_next=RED;
-                //maybe reset lightA_green_cycle here
             end
-        end else begin
+        end else begin  //even if there's no car(00) or have 2 cars(11) on both street,still have to care about the green light cycle
             if(lightA==GREEN) begin
                 lightA_green_cycle_next=lightA_green_cycle+1;
             end
@@ -86,8 +77,6 @@ module lab2_2(
             end
             lightA_next=lightA;
             lightB_next=lightB;
-            //lightA_green_cycle_next=lightA_green_cycle;
-            //lightB_green_cycle_next=lightB_green_cycle;
         end
     end
 endmodule
