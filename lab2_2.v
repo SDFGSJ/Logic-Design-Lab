@@ -78,6 +78,12 @@ module lab2_2(
                 //maybe reset lightA_green_cycle here
             end
         end else begin
+            if(lightA==GREEN) begin
+                lightA_green_cycle_next=lightA_green_cycle+1;
+            end
+            if(lightB==GREEN) begin
+                lightB_green_cycle_next=lightB_green_cycle+1;
+            end
             lightA_next=lightA;
             lightB_next=lightB;
             //lightA_green_cycle_next=lightA_green_cycle;
