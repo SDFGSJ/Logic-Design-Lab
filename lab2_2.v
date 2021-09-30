@@ -11,8 +11,8 @@ module lab2_2(
     parameter [2:0] RED=3'b100, YELLOW=3'b010, GREEN=3'b001;
     
     reg [2:0] lightA_next=0,lightB_next=0;
-    reg [1:0] lightA_green_cycle=0,lightB_green_cycle=0;
-    reg [1:0] lightA_green_cycle_next=0,lightB_green_cycle_next=0;
+    reg lightA_green_cycle=0,lightB_green_cycle=0;
+    reg lightA_green_cycle_next=0,lightB_green_cycle_next=0;
     
     //flip-flop
     always @(posedge clk,posedge rst) begin
@@ -38,7 +38,7 @@ module lab2_2(
     always @(*) begin
         if({carA,carB}==2'b01) begin
             if({lightA,lightB}=={GREEN,RED}) begin
-                if(lightA_green_cycle[1]) begin //green has stayed at least 2 cycles
+                if(lightA_green_cycle) begin //green has stayed at least 2 cycles
                     lightA_next=YELLOW;
                     lightB_next=RED;
                 end else begin
@@ -54,7 +54,7 @@ module lab2_2(
             end
         end else if({carA,carB}==2'b10) begin
             if({lightA,lightB}=={RED,GREEN}) begin
-                if(lightB_green_cycle[1]) begin //green has stayed at least 2 cycles
+                if(lightB_green_cycle) begin //green has stayed at least 2 cycles
                     lightA_next=RED;
                     lightB_next=YELLOW;
                 end else begin
@@ -69,10 +69,10 @@ module lab2_2(
                 lightB_next=RED;
             end
         end else begin  //even if there's no car(00) or have 2 cars(11) on both street,still have to care about the green light cycle
-            if(lightA==GREEN) begin
+            if(lightA==GREEN && lightA_green_cycle==0) begin
                 lightA_green_cycle_next=lightA_green_cycle+1;
             end
-            if(lightB==GREEN) begin
+            if(lightB==GREEN && lightB_green_cycle==0) begin
                 lightB_green_cycle_next=lightB_green_cycle+1;
             end
             lightA_next=lightA;
