@@ -51,7 +51,12 @@ module lab2_1(
     always @(*) begin
         if(an == 0) begin
             countup = ~countup;
-            n = 0;
+            if(rst) begin   //reset,next number is 1
+                n = 1;
+            end else begin  //normal
+                n = 0;
+            end
+            
         end else if(n == 58) begin
             countup = ~countup;
             n = 1;
