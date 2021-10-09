@@ -24,13 +24,13 @@ module lab3_2(
     parameter [1:0] SHIFT=2'b01;
     parameter [1:0] EXPAND=2'b10;
 
-    reg [15:0] myled=0,led_next=0;
+    reg [15:0] out=0,led_next=0;
     reg [1:0] state=FLASH, state_next=FLASH;
     reg [3:0] cnt=0,cnt_next=0;
     wire myclk;
     clock_divider #(.n(25)) cd25(.clk(clk), .clk_div(myclk));
 
-    assign led=(rst==1) ? (2**16)-1 : led_next;
+    assign led=out;
 
     /*initial begin
         $monitor($time," state=%d, out=%d, cnt=%d",state,out,cnt);
@@ -38,11 +38,13 @@ module lab3_2(
 
     //flipflop
     always @(posedge myclk,posedge rst) begin
-        cnt <= cnt_next;
-        myled<=led_next;
         if(rst==1) begin
+            cnt<=0;
+            out<=(2**16)-1;
             state <= FLASH;
         end else begin
+            cnt <= cnt_next;
+            out<=led_next;
             state <= state_next;
         end
     end
@@ -50,13 +52,15 @@ module lab3_2(
     //combinationl block
     always @(*) begin
         if(en==0) begin
-            led_next=myled;
+            cnt_next<=cnt;
+            state_next<=state;
+            led_next=led;
         end else begin
             if(state==FLASH) begin
                 if(cnt<6*2) begin
                     cnt_next=cnt+1;
                     state_next=FLASH;
-                    led_next = ~myled;
+                    led_next = ~led;
                 end else begin
                     state_next=SHIFT;
                     led_next=16'b1010_1010_1010_1010;
@@ -64,7 +68,7 @@ module lab3_2(
                 end
             end else if(state==SHIFT) begin
                 state_next=SHIFT;
-                case (myled)
+                case (led)
                     16'b1000_0000_0000_0000:
                         led_next=dir ? 16'b0000_0000_0000_0000 : 16'b0100_0000_0000_0000;
                     16'b0100_0000_0000_0000:
@@ -132,18 +136,18 @@ module lab3_2(
                 endcase
             end else if(state==EXPAND) begin
                 if(dir==0) begin    //expand
-                    if(myled==0) begin
+                    if(led==0) begin
                         state_next=EXPAND;
                         led_next=16'b0000_0001_1000_0000;
                     end else begin
                         state_next=EXPAND;
-                        led_next=(myled<<1) | (myled>>1);
+                        led_next=(led<<1) | (led>>1);
                     end
                 end else begin  //shrink
                     state_next=EXPAND;
-                    led_next=(myled<<1) & (myled>>1);
+                    led_next=(led<<1) & (led>>1);
                 end
-                if(myled==2**16-1) begin
+                if(led==2**16-1) begin
                     state_next=FLASH;
                     led_next=0;
                 end
