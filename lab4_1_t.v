@@ -21,7 +21,7 @@ module lab4_1_t;
         #100
         en=1;
 
-        #500
+        #1200
         dir=1;
     end
 endmodule

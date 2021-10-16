@@ -78,10 +78,10 @@ module lab4_1(
 
 
     reg [3:0] value=0;
-    reg mode=START;  //remember to change back to PAUSE
+    reg mode=PAUSE;
     reg speed=SLOW,speed_next;
     reg countup=1;
-    reg [3:0] ten=0,one=0,ten_next,one_next;  //十位數、個位數
+    reg [3:0] ten=0,one=0,ten_next,one_next;
     
     initial begin
         $monitor($time,": %d%d, mode=%d",ten,one,mode);
@@ -143,7 +143,7 @@ module lab4_1(
         endcase
     end
 
-    always @(posedge myclk,posedge rst) begin
+    always @(posedge clk,posedge rst) begin
         if(rst==1) begin
             DIGIT<=4'b0000;
             DISPLAY<=7'b100_0000;   //number 0
@@ -157,17 +157,19 @@ module lab4_1(
             ten<=0;
             one<=0;
         end else begin
-            //DIGIT<=DIGIT;
-            //DISPLAY<=DISPLAY;
-            //max<=max;
-            //min<=min;
-
-            //value<=value;
             mode<=mode;
             speed<=speed_next;
-            //countup<=countup;
             ten<=ten_next;
             one<=one_next;
+        end
+    end
+
+    //START/PAUSE
+    always @(*) begin
+        if(en==1) begin
+            mode = ~mode;
+        end else begin
+            mode = mode;
         end
     end
 
@@ -181,7 +183,6 @@ module lab4_1(
             end
         end else begin  //PAUSE
             countup=countup;
-            //value=value;
             mode=mode;
             speed_next=speed;
             ten_next=ten;
