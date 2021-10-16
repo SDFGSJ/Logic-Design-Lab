@@ -85,14 +85,14 @@ module lab4_1(
     onepulse speeddown_1(.clk(clk), .pb_debounced(speeddown_debounced), .pb_1pulse(speeddown_1pulse));
 
 
-    reg [3:0] value=0;
+    reg [3:0] value;
     reg mode=PAUSE;
     reg speed=SLOW,speed_next;
     reg countup=1;
     reg [3:0] ten=0,one=0,ten_next,one_next;
     
-    /*initial begin
-        $monitor($time,": %d%d, mode=%d",ten,one,mode);
+    /*always @(posedge clk) begin
+        $display("%d%d, mode=%d,countup=%d",ten,one,mode,countup);
     end*/
 
     //myclk
@@ -151,14 +151,12 @@ module lab4_1(
         endcase
     end
 
-    always @(posedge myclk,posedge rst) begin
-        if(rst==1) begin
-            DIGIT<=4'b0000;
-            //DISPLAY<=7'b100_0000;   //number 0
+    always @(posedge myclk,posedge rst_1pulse) begin
+        if(rst_1pulse==1/*rst==1*/) begin
+            DIGIT<=4'b1110;
             max<=0;
             min<=0;
 
-            value<=0;
             mode<=PAUSE;
             speed<=SLOW;
             countup<=1;
@@ -174,33 +172,29 @@ module lab4_1(
 
     //START/PAUSE
     always @(*) begin
-        if(en_1pulse==1) begin
+        if(en_1pulse==1/*en==1*/) begin
             mode = ~mode;
         end else begin
             mode = mode;
         end
     end
 
-    //START/PAUSE and count up/down
+    //count up/down
     always @(*) begin
         if(mode==START) begin
-            if(dir_debounced==1) begin
+            if(dir_debounced==1/*dir==1*/) begin
                 countup=0;
             end else begin
                 countup=1;
             end
         end else begin  //PAUSE
             countup=countup;
-            mode=mode;
-            speed_next=speed;
-            ten_next=ten;
-            one_next=one;
         end
     end
 
     //speed
     always @(*) begin
-        if(speedup_1pulse==1) begin
+        if(speedup_1pulse==1/*speedup==1*/) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
             end else if(speed==NORMAL) begin
@@ -208,7 +202,7 @@ module lab4_1(
             end else if(speed==FAST) begin
                 speed_next=FAST;
             end
-        end else if(speeddown_1pulse==1) begin
+        end else if(speeddown_1pulse==1/*speeddown==1*/) begin
             if(speed==SLOW) begin
                 speed_next=SLOW;
             end else if(speed==NORMAL) begin
@@ -223,36 +217,41 @@ module lab4_1(
 
     //calculation and boundary
     always @(*) begin
-        if(countup) begin
-            if(ten==9 && one==9) begin   //99
-                max=1;min=0;
-                ten_next=9;
-                one_next=9;
-            end else begin  //normal increment
-                max=0;min=0;
-                if(one==9) begin
-                    one_next=0;
-                    ten_next=ten+1;
-                end else begin
-                    one_next=one+1;
-                    ten_next=ten;
-                end
-            end
-        end else begin
-            if(ten==0 && one==0) begin   //00
-                min=1;max=0;
-                ten_next=0;
-                one_next=0;
-            end else begin  //normal decrement
-                min=0;max=0;
-                if(one==0) begin
+        if(mode==START) begin
+            if(countup) begin
+                if(ten==9 && one==9) begin   //99
+                    max=1;min=0;
+                    ten_next=9;
                     one_next=9;
-                    ten_next=ten-1;
-                end else begin
-                    one_next=one-1;
-                    ten_next=ten;
+                end else begin  //normal increment
+                    max=0;min=0;
+                    if(one==9) begin
+                        one_next=0;
+                        ten_next=ten+1;
+                    end else begin
+                        one_next=one+1;
+                        ten_next=ten;
+                    end
+                end
+            end else begin
+                if(ten==0 && one==0) begin   //00
+                    min=1;max=0;
+                    ten_next=0;
+                    one_next=0;
+                end else begin  //normal decrement
+                    min=0;max=0;
+                    if(one==0) begin
+                        one_next=9;
+                        ten_next=ten-1;
+                    end else begin
+                        one_next=one-1;
+                        ten_next=ten;
+                    end
                 end
             end
+        end else begin  //PAUSE
+            ten_next=ten;
+            one_next=one;
         end
     end
 endmodule
