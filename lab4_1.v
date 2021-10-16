@@ -76,6 +76,14 @@ module lab4_1(
     debounce speedup_de(.clk(clk), .pb(speedup), .pb_debounced(speedup_debounced));
     debounce speeddown_de(.clk(clk), .pb(speeddown), .pb_debounced(speeddown_debounced));
 
+    //1 pulse
+    wire rst_1pulse,en_1pulse,dir_1pulse,speedup_1pulse,speeddown_1pulse;
+    onepulse rst_1(.clk(clk), .pb_debounced(rst_debounced), .pb_1pulse(rst_1pulse));
+    onepulse en_1(.clk(clk), .pb_debounced(en_debounced), .pb_1pulse(en_1pulse));
+    onepulse dir_1(.clk(clk), .pb_debounced(dir_debounced), .pb_1pulse(dir_1pulse));
+    onepulse speedup_1(.clk(clk), .pb_debounced(speedup_debounced), .pb_1pulse(speedup_1pulse));
+    onepulse speeddown_1(.clk(clk), .pb_debounced(speeddown_debounced), .pb_1pulse(speeddown_1pulse));
+
 
     reg [3:0] value=0;
     reg mode=PAUSE;
@@ -83,9 +91,9 @@ module lab4_1(
     reg countup=1;
     reg [3:0] ten=0,one=0,ten_next,one_next;
     
-    initial begin
+    /*initial begin
         $monitor($time,": %d%d, mode=%d",ten,one,mode);
-    end
+    end*/
 
     //myclk
     always @(*) begin
@@ -120,7 +128,7 @@ module lab4_1(
                 DIGIT=4'b1110;
             end
             default: begin
-                value=0;
+                value=3;
                 DIGIT=4'b1110;
             end
         endcase
@@ -143,10 +151,10 @@ module lab4_1(
         endcase
     end
 
-    always @(posedge clk,posedge rst) begin
+    always @(posedge myclk,posedge rst) begin
         if(rst==1) begin
             DIGIT<=4'b0000;
-            DISPLAY<=7'b100_0000;   //number 0
+            //DISPLAY<=7'b100_0000;   //number 0
             max<=0;
             min<=0;
 
@@ -166,7 +174,7 @@ module lab4_1(
 
     //START/PAUSE
     always @(*) begin
-        if(en==1) begin
+        if(en_1pulse==1) begin
             mode = ~mode;
         end else begin
             mode = mode;
@@ -176,7 +184,7 @@ module lab4_1(
     //START/PAUSE and count up/down
     always @(*) begin
         if(mode==START) begin
-            if(dir==1) begin
+            if(dir_debounced==1) begin
                 countup=0;
             end else begin
                 countup=1;
@@ -192,7 +200,7 @@ module lab4_1(
 
     //speed
     always @(*) begin
-        if(speedup==1) begin
+        if(speedup_1pulse==1) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
             end else if(speed==NORMAL) begin
@@ -200,7 +208,7 @@ module lab4_1(
             end else if(speed==FAST) begin
                 speed_next=FAST;
             end
-        end else if(speeddown==1) begin
+        end else if(speeddown_1pulse==1) begin
             if(speed==SLOW) begin
                 speed_next=SLOW;
             end else if(speed==NORMAL) begin
@@ -216,7 +224,7 @@ module lab4_1(
     //calculation and boundary
     always @(*) begin
         if(countup) begin
-            if(ten==9 & one==9) begin   //99
+            if(ten==9 && one==9) begin   //99
                 max=1;min=0;
                 ten_next=9;
                 one_next=9;
@@ -231,7 +239,7 @@ module lab4_1(
                 end
             end
         end else begin
-            if(ten==0 & one==0) begin   //00
+            if(ten==0 && one==0) begin   //00
                 min=1;max=0;
                 ten_next=0;
                 one_next=0;
