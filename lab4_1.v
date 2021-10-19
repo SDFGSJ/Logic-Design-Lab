@@ -35,7 +35,7 @@ module onepulse(
     reg pb_debounced_delay;
 
     always @(posedge clk) begin
-        if(pb_debounced==1'b1 & pb_debounced_delay==1'b0) begin
+        if(pb_debounced==1'b1 && pb_debounced_delay==1'b0) begin
             pb_1pulse <= 1'b1;
         end else begin
             pb_1pulse <= 1'b0;
@@ -49,8 +49,8 @@ module lab4_1(
     input rst,
     input en,
     input dir,
-    input speedup,
-    input speeddown,
+    input speed_up,
+    input speed_down,
     output reg [3:0] DIGIT,
     output reg [6:0] DISPLAY,
     output reg max,
@@ -62,34 +62,36 @@ module lab4_1(
     parameter [1:0] NORMAL = 2'b01;
     parameter [1:0] FAST = 2'b10;
     
-    wire wire_slow,wire_normal,wire_fast;
+    wire wire_slow, wire_normal, wire_fast, wire_display, display_clk;
     reg myclk;
-    clock_divider #(.n(27)) slow(.clk(clk),.clk_div(wire_slow));    //1/2 Hz
-    clock_divider #(.n(26)) normal(.clk(clk),.clk_div(wire_normal));  //1 Hz
-    clock_divider #(.n(25)) fast(.clk(clk),.clk_div(wire_fast));    //2 Hz
-    
+    clock_divider #(.n(27)) slow(   .clk(clk), .clk_div(wire_slow));    //1/2 Hz
+    clock_divider #(.n(26)) normal( .clk(clk), .clk_div(wire_normal));  //1 Hz
+    clock_divider #(.n(25)) fast(   .clk(clk), .clk_div(wire_fast));    //2 Hz
+    clock_divider #(.n(20)) cnt(    .clk(clk), .clk_div(wire_display));  //clock to display 7-segment
+    assign display_clk = wire_display;
+
     //debounce
-    wire rst_debounced,en_debounced,dir_debounced,speedup_debounced,speeddown_debounced;
-    debounce rst_de(.clk(clk), .pb(rst), .pb_debounced(rst_debounced));
-    debounce en_de(.clk(clk), .pb(en), .pb_debounced(en_debounced));
-    debounce dir_de(.clk(clk), .pb(dir), .pb_debounced(dir_debounced));
-    debounce speedup_de(.clk(clk), .pb(speedup), .pb_debounced(speedup_debounced));
-    debounce speeddown_de(.clk(clk), .pb(speeddown), .pb_debounced(speeddown_debounced));
+    wire rst_debounced, en_debounced, dir_debounced, speed_up_debounced, speed_down_debounced;
+    debounce rst_de(        .clk(clk), .pb(rst), .pb_debounced(rst_debounced));
+    debounce en_de(         .clk(clk), .pb(en), .pb_debounced(en_debounced));
+    debounce dir_de(        .clk(clk), .pb(dir), .pb_debounced(dir_debounced));
+    debounce speed_up_de(   .clk(clk), .pb(speed_up), .pb_debounced(speed_up_debounced));
+    debounce speed_down_de( .clk(clk), .pb(speed_down), .pb_debounced(speed_down_debounced));
 
     //1 pulse
-    wire rst_1pulse,en_1pulse,dir_1pulse,speedup_1pulse,speeddown_1pulse;
-    onepulse rst_1(.clk(clk), .pb_debounced(rst_debounced), .pb_1pulse(rst_1pulse));
-    onepulse en_1(.clk(clk), .pb_debounced(en_debounced), .pb_1pulse(en_1pulse));
-    onepulse dir_1(.clk(clk), .pb_debounced(dir_debounced), .pb_1pulse(dir_1pulse));
-    onepulse speedup_1(.clk(clk), .pb_debounced(speedup_debounced), .pb_1pulse(speedup_1pulse));
-    onepulse speeddown_1(.clk(clk), .pb_debounced(speeddown_debounced), .pb_1pulse(speeddown_1pulse));
+    wire rst_1pulse, en_1pulse, dir_1pulse, speed_up_1pulse, speed_down_1pulse;
+    onepulse rst_1(         .clk(clk), .pb_debounced(rst_debounced), .pb_1pulse(rst_1pulse));
+    onepulse en_1(          .clk(clk), .pb_debounced(en_debounced), .pb_1pulse(en_1pulse));
+    onepulse dir_1(         .clk(clk), .pb_debounced(dir_debounced), .pb_1pulse(dir_1pulse));
+    onepulse speed_up_1(    .clk(clk), .pb_debounced(speed_up_debounced), .pb_1pulse(speed_up_1pulse));
+    onepulse speed_down_1(  .clk(clk), .pb_debounced(speed_down_debounced), .pb_1pulse(speed_down_1pulse));
 
 
     reg [3:0] value;
-    reg mode=PAUSE;
-    reg speed=SLOW,speed_next;
-    reg countup=1;
-    reg [3:0] ten=0,one=0,ten_next,one_next;
+    reg mode = PAUSE; //1-bit
+    reg [1:0] speed = SLOW, speed_next;    //2-bits
+    reg countup = 1;
+    reg [3:0] ten=0, one=0, ten_next, one_next;
     
     /*always @(posedge clk) begin
         $display("%d%d, mode=%d,countup=%d",ten,one,mode,countup);
@@ -109,26 +111,26 @@ module lab4_1(
     end
 
     //7-segment control p.15
-    always @(posedge clk) begin
+    always @(posedge display_clk) begin
         case(DIGIT)
             4'b1110: begin  //one (rightmost number)
-                value=one;
+                value=ten;
                 DIGIT=4'b1101;
             end
             4'b1101: begin  //ten
-                value=ten;
+                value=(countup) ? 10 : 11;  //special unused number
                 DIGIT=4'b1011;
             end
             4'b1011: begin  //arrow up/down
-                value=(countup) ? 10 : 11;  //special unused number
+                value=speed;
                 DIGIT=4'b0111;
             end
             4'b0111: begin  //speed (leftmost number)
-                value=speed;
+                value=one;
                 DIGIT=4'b1110;
             end
             default: begin
-                value=3;
+                value=one;
                 DIGIT=4'b1110;
             end
         endcase
@@ -153,9 +155,9 @@ module lab4_1(
 
     always @(posedge myclk,posedge rst_1pulse) begin
         if(rst_1pulse==1/*rst==1*/) begin
-            DIGIT<=4'b1110;
-            max<=0;
-            min<=0;
+            //DIGIT<=4'b1110;
+            //max<=0;
+            //min<=0;
 
             mode<=PAUSE;
             speed<=SLOW;
@@ -163,8 +165,14 @@ module lab4_1(
             ten<=0;
             one<=0;
         end else begin
+            DIGIT<=DIGIT;
+            max<=max;
+            min<=min;
+
+
             mode<=mode;
             speed<=speed_next;
+            countup<=countup;
             ten<=ten_next;
             one<=one_next;
         end
@@ -194,7 +202,7 @@ module lab4_1(
 
     //speed
     always @(*) begin
-        if(speedup_1pulse==1/*speedup==1*/) begin
+        if(speed_up_1pulse==1/*speed_up==1*/) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
             end else if(speed==NORMAL) begin
@@ -202,7 +210,7 @@ module lab4_1(
             end else if(speed==FAST) begin
                 speed_next=FAST;
             end
-        end else if(speeddown_1pulse==1/*speeddown==1*/) begin
+        end else if(speed_down_1pulse==1/*speed_down==1*/) begin
             if(speed==SLOW) begin
                 speed_next=SLOW;
             end else if(speed==NORMAL) begin
