@@ -44,6 +44,7 @@ module onepulse(
     end
 endmodule
 
+//remember to remove onepulse,debounce
 module lab4_1(
     input clk,
     input rst,
@@ -56,17 +57,17 @@ module lab4_1(
     output reg max,
     output reg min
 );
-    parameter START = 1'b0;
-    parameter PAUSE = 1'b1;
+    parameter START = 1'b1;
+    parameter PAUSE = 1'b0;
     parameter [1:0] SLOW = 2'b00;
     parameter [1:0] NORMAL = 2'b01;
     parameter [1:0] FAST = 2'b10;
     
     wire wire_slow, wire_normal, wire_fast, display_clk;
     reg myclk;
-    clock_divider #(.n(27)) slow(   .clk(clk), .clk_div(wire_slow));    //1/2 Hz
-    clock_divider #(.n(26)) normal( .clk(clk), .clk_div(wire_normal));  //1 Hz
-    clock_divider #(.n(25)) fast(   .clk(clk), .clk_div(wire_fast));    //2 Hz
+    clock_divider #(.n(25)) slow(   .clk(clk), .clk_div(wire_slow));
+    clock_divider #(.n(24)) normal( .clk(clk), .clk_div(wire_normal));
+    clock_divider #(.n(23)) fast(   .clk(clk), .clk_div(wire_fast));
     clock_divider #(.n(10)) cnt(    .clk(clk), .clk_div(display_clk));  //clock to display 7-segment
 
     //debounce
@@ -150,9 +151,8 @@ module lab4_1(
         endcase
     end
 
-    always @(posedge myclk,posedge rst_1pulse) begin
-        if(rst_1pulse==1/*rst==1*/) begin
-            //DIGIT<=4'b1110;
+    always @(posedge myclk,posedge rst) begin
+        if(rst) begin
             max<=0;
             min<=0;
 
@@ -162,10 +162,8 @@ module lab4_1(
             ten<=0;
             one<=0;
         end else begin
-            //DIGIT<=DIGIT;
             max<=max_next;
             min<=min_next;
-
 
             mode<=mode_next;
             speed<=speed_next;
@@ -192,13 +190,13 @@ module lab4_1(
             end else begin
                 countup_next=1;
             end
-        end else begin  //PAUSE
+        end else begin  //PAUSE(can change speed)
             countup_next=countup;
         end
     end
 
     //speed
-    always @(*) begin
+    always @(posedge speed_up_1pulse,posedge speed_down_1pulse) begin
         if(speed_up_1pulse==1) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
