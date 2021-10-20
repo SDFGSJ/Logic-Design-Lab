@@ -174,8 +174,8 @@ module lab4_1(
     end
 
     //START/PAUSE
-    always @(posedge en_1pulse,posedge rst_1pulse) begin
-        if(rst_1pulse==1) begin
+    always @(posedge en_1pulse,posedge rst) begin
+        if(rst==1) begin
             mode_next=PAUSE;
         end else if(en_1pulse==1) begin
             mode_next = ~mode;
@@ -198,8 +198,10 @@ module lab4_1(
     end
 
     //speed
-    always @(posedge speed_up_1pulse,posedge speed_down_1pulse) begin
-        if(speed_up_1pulse==1) begin
+    always @(posedge speed_up_1pulse,posedge speed_down_1pulse,posedge rst) begin
+        if(rst) begin
+            speed_next=SLOW;
+        end else if(speed_up_1pulse==1) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
             end else if(speed==NORMAL) begin
