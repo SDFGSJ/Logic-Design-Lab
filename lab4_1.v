@@ -108,22 +108,22 @@ module lab4_1(
         end
     end
 
-    //7-segment control p.15
+    //7-segment control
     always @(posedge display_clk) begin
         case(DIGIT)
-            4'b1110: begin  //one (rightmost number)
+            4'b1110: begin
                 value=ten;
                 DIGIT=4'b1101;
             end
-            4'b1101: begin  //ten
-                value=(countup) ? 10 : 11;  //special unused number
+            4'b1101: begin
+                value=(countup) ? 10 : 11;
                 DIGIT=4'b1011;
             end
-            4'b1011: begin  //arrow up/down
-                value=speed;
+            4'b1011: begin
+                value={2'b00,speed};
                 DIGIT=4'b0111;
             end
-            4'b0111: begin  //speed (leftmost number)
+            4'b0111: begin
                 value=one;
                 DIGIT=4'b1110;
             end
@@ -174,8 +174,10 @@ module lab4_1(
     end
 
     //START/PAUSE
-    always @(posedge en_1pulse) begin
-        if(en_1pulse==1) begin
+    always @(posedge en_1pulse,posedge rst_1pulse) begin
+        if(rst_1pulse==1) begin
+            mode_next=PAUSE;
+        end else if(en_1pulse==1) begin
             mode_next = ~mode;
         end else begin
             mode_next = mode;
