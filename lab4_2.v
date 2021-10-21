@@ -65,17 +65,14 @@ module lab4_2(
     parameter [2:0] COUNTING=5; //counting state
     
     reg [3:0] value;
-    reg countdown=0, countdown_next;  //initial is countup
-    reg mode=START, mode_next;
+    reg countdown=0;    //initial is countup
+    reg mode=START;
     reg [2:0] state=DIRECTION, state_next;
-
-    /*reg minute, set_minute_next, cnt_minute_next, goal_minute;
-    reg [2:0] tensec, set_tensec_next, cnt_tensec_next, goal_tensec;
-    reg [3:0] second, pointsec, set_second_next, set_pointsec_next, goal_second, goal_pointsec;*/
 
     reg [3:0] mytime[0:3];  //{min, 10s, 1s, 0.1s}
     reg [3:0] set_time_next[0:3];    //{min, 10s, 1s, 0.1s}
-    reg [3:0] cnt_time_next[0:3];    //{min, 10s, 1s, 0.1s}
+    reg [3:0] cntdown_time_next[0:3];    //{min, 10s, 1s, 0.1s}
+    reg [3:0] cntup_time_next[0:3]; //{min, 10s, 1s, 0.1s}
     reg [3:0] goal[0:3];    //{min, 10s, 1s, 0.1s}
 
     wire display_clk,myclk;
@@ -140,16 +137,14 @@ module lab4_2(
         endcase
     end
 
-    wire rst_debounced, en_debounced, input_number_debounced, enter_debounced, count_down_debounced;
+    wire rst_debounced, input_number_debounced, enter_debounced, count_down_debounced;
     debounce rst_de(            .clk(clk), .pb(rst),         .pb_debounced(rst_debounced));
-    debounce en_de(             .clk(clk), .pb(en),          .pb_debounced(en_debounced));
     debounce input_number_de(   .clk(clk), .pb(input_number),.pb_debounced(input_number_debounced));
     debounce enter_de(          .clk(clk), .pb(enter),       .pb_debounced(enter_debounced));
     debounce count_down_de(     .clk(clk), .pb(count_down),  .pb_debounced(count_down_debounced));
 
-    wire rst_1pulse, en_1pulse, input_number_1pulse, enter_1pulse, count_down_1pulse;
+    wire rst_1pulse, input_number_1pulse, enter_1pulse, count_down_1pulse;
     onepulse rst_1(         .clk(clk), .pb_debounced(rst_debounced),         .pb_1pulse(rst_1pulse));
-    onepulse en_1(          .clk(clk), .pb_debounced(en_debounced),          .pb_1pulse(en_1pulse));
     onepulse input_number_1(.clk(clk), .pb_debounced(input_number_debounced),.pb_1pulse(input_number_1pulse));
     onepulse enter_1(       .clk(clk), .pb_debounced(enter_debounced),       .pb_1pulse(enter_1pulse));
     onepulse count_down_1(  .clk(clk), .pb_debounced(count_down_debounced),  .pb_1pulse(count_down_1pulse));
@@ -159,8 +154,8 @@ module lab4_2(
         if(rst) begin
             //led0<=0;
 
-            countdown<=0;
-            mode<=PAUSE;
+            //countdown<=0;
+            //mode<=START;
             state<=DIRECTION;
             mytime[0]<=0;
             mytime[1]<=0;
@@ -168,8 +163,6 @@ module lab4_2(
             mytime[3]<=0;
 
         end else begin
-            countdown<=countdown_next;
-            mode<=mode_next;
             state<=state_next;
             if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
                 mytime[0]<=set_time_next[0];
@@ -177,10 +170,17 @@ module lab4_2(
                 mytime[2]<=set_time_next[2];
                 mytime[3]<=set_time_next[3];
             end else if(state==COUNTING) begin
-                mytime[0]<=cnt_time_next[0];
-                mytime[1]<=cnt_time_next[1];
-                mytime[2]<=cnt_time_next[2];
-                mytime[3]<=cnt_time_next[3];
+                if(countdown) begin
+                    mytime[0]<=cntdown_time_next[0];
+                    mytime[1]<=cntdown_time_next[1];
+                    mytime[2]<=cntdown_time_next[2];
+                    mytime[3]<=cntdown_time_next[3];
+                end else begin
+                    mytime[0]<=cntup_time_next[0];
+                    mytime[1]<=cntup_time_next[1];
+                    mytime[2]<=cntup_time_next[2];
+                    mytime[3]<=cntup_time_next[3];
+                end
             end else begin
                 mytime[0]<=0;
                 mytime[1]<=0;
@@ -190,48 +190,34 @@ module lab4_2(
         end
     end
 
-    //start/pause
-    always @(posedge en_1pulse,posedge rst) begin
-        if(rst) begin
-            mode_next=START;
+    //start/pause(en is switch,dont need to debounce/one pulse)
+    always @(*) begin
+        if(en) begin
+            mode=START;
         end else begin
-            if(state==COUNTING) begin
-                if(en_1pulse) begin
-                    mode_next = ~mode;
-                end else begin
-                    mode_next = mode;
-                end
-            end else begin
-                mode_next = mode;
-            end
+            mode=PAUSE;
         end
     end
 
     //count up/down,led0
-    always @(posedge count_down_1pulse,posedge rst) begin
-        if(rst) begin
-            countdown_next<=0;
+    always @(posedge count_down_1pulse/*,posedge rst*/) begin
+        /*if(rst) begin
+            countdown<=0;
             led0<=0;
-        end else begin
+        end else begin*/
             if(state==DIRECTION) begin
                 if(count_down_1pulse) begin
-                    countdown_next = ~countdown;
-                    led0=~led0;
+                    countdown = ~countdown;
+                    led0 = ~led0;
                 end else begin
-                    countdown_next = countdown;
+                    countdown = countdown;
                     led0=led0;
                 end
             end else begin
-                countdown_next = countdown;
+                countdown = countdown;
                 led0=led0;
             end
-
-            /*if(countdown) begin
-                led0=1;
-            end else begin
-                led0=0;
-            end*/
-        end
+        //end
     end
 
     //(enter)state transition logic
@@ -272,7 +258,6 @@ module lab4_2(
             set_time_next[2]=mytime[2];
             set_time_next[3]=mytime[3];
 
-            //code below may have to be protected with state==counting because of multi net driven
             if(state==MINUTE) begin
                 if(mytime[0]==1) begin //minute has reach its max 1
                     set_time_next[0]=0;
@@ -310,59 +295,66 @@ module lab4_2(
     //counting
     always @(*) begin
         //PAUSE || has count to goal => maintain the number
-        cnt_time_next[0]=mytime[0];
-        cnt_time_next[1]=mytime[1];
-        cnt_time_next[2]=mytime[2];
-        cnt_time_next[3]=mytime[3];
+        if(countdown) begin
+            cntdown_time_next[0]=mytime[0];
+            cntdown_time_next[1]=mytime[1];
+            cntdown_time_next[2]=mytime[2];
+            cntdown_time_next[3]=mytime[3];
+        end else begin
+            cntup_time_next[0]=mytime[0];
+            cntup_time_next[1]=mytime[1];
+            cntup_time_next[2]=mytime[2];
+            cntup_time_next[3]=mytime[3];
+        end
 
         if(mode==START) begin
             if(mytime[0]!=goal[0] || mytime[1]!=goal[1] || mytime[2]!=goal[2] || mytime[3]!=goal[3]) begin  //havent reach the goal
                 if(countdown) begin
                     if(mytime[0]==0 && mytime[1]==0 && mytime[2]==0 && mytime[3]==0) begin
-                        cnt_time_next[0]=0;
-                        cnt_time_next[1]=0;
-                        cnt_time_next[2]=0;
-                        cnt_time_next[3]=0;
+                        cntdown_time_next[0]=0;
+                        cntdown_time_next[1]=0;
+                        cntdown_time_next[2]=0;
+                        cntdown_time_next[3]=0;
                     end else begin
                         if(mytime[3]==0) begin   //ex.1:11.0=>1:10.9
-                            cnt_time_next[3]=9;
+                            cntdown_time_next[3]=9;
                             if(mytime[2]==0) begin //ex.1:10.0=>1:09.9
-                                cnt_time_next[2]=9;
+                                cntdown_time_next[2]=9;
                                 if(mytime[1]==0) begin //ex.1:00.0=>0:59.9
-                                    cnt_time_next[0]=0;
-                                    cnt_time_next[1]=5;
+                                    cntdown_time_next[0]=0;
+                                    cntdown_time_next[1]=5;
                                 end else begin  //ex.0:10.0=>0:09.9
-                                    cnt_time_next[1]=mytime[1]-1;
+                                    cntdown_time_next[1]=mytime[1]-1;
                                 end
                             end else begin  //ex.0:05.0=>0:04.9
-                                cnt_time_next[2]=mytime[2]-1;
+                                cntdown_time_next[2]=mytime[2]-1;
                             end
                         end else begin  //ex.0:00.5=>0:00.4
-                            cnt_time_next[3]=mytime[3]-1;
+                            cntdown_time_next[3]=mytime[3]-1;
                         end
                     end
                 end else begin  //countup
-                    if(mytime[0]==1 && mytime[1]==5 && mytime[2]==9 && mytime[3]==9) begin
-                        cnt_time_next[0]=1;
-                        cnt_time_next[1]=5;
-                        cnt_time_next[2]=9;
-                        cnt_time_next[3]=9;
+                    if(mytime[0]==goal[0] && mytime[1]==goal[1] && mytime[2]==goal[2] && mytime[3]==goal[3]) begin  //should be goal here
+                        cntup_time_next[0]=goal[0];
+                        cntup_time_next[1]=goal[1];
+                        cntup_time_next[2]=goal[2];
+                        cntup_time_next[3]=goal[3];
                     end else begin
                         if(mytime[3]==9) begin   //ex.0:00.9=>0:01.0
-                            cnt_time_next[3]=0;
+                            cntup_time_next[3]=0;
                             if(mytime[2]==9) begin //ex.0:09.9=>0:10.0
-                                cnt_time_next[2]=0;
+                                cntup_time_next[2]=0;
                                 if(mytime[1]==5) begin //ex.0:59.9=>1:00.0
-                                    cnt_time_next[0]=1;
-                                    cnt_time_next[1]=0;
+                                    cntup_time_next[0]=1;
+                                    cntup_time_next[1]=0;
                                 end else begin  //ex.0:49.9=>0:50.0
-                                    cnt_time_next[1]=mytime[1]+1;
+                                    cntup_time_next[1]=mytime[1]+1;
                                 end
                             end else begin  //ex.0:04.9=>0:05.0
-                                cnt_time_next[2]=mytime[2]+1;
+                                cntup_time_next[2]=mytime[2]+1;
                             end
                         end else begin  //ex.0:00.1=>0:00.2
-                            cnt_time_next[3]=mytime[3]+1;
+                            cntup_time_next[3]=mytime[3]+1;
                         end
                     end
                 end
