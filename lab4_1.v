@@ -64,28 +64,27 @@ module lab4_1(
     parameter [1:0] FAST = 2'b10;
     
     wire wire_slow, wire_normal, wire_fast, display_clk;
-    reg myclk;
+    wire slow_1pulse, normal_1pulse, fast_1pulse;
     clock_divider #(.n(25)) slow(   .clk(clk), .clk_div(wire_slow));
     clock_divider #(.n(24)) normal( .clk(clk), .clk_div(wire_normal));
     clock_divider #(.n(23)) fast(   .clk(clk), .clk_div(wire_fast));
     clock_divider #(.n(10)) cnt(    .clk(clk), .clk_div(display_clk));  //clock to display 7-segment
+    onepulse slow_1p(   .clk(clk), .pb_debounced(wire_slow),    .pb_1pulse(slow_1pulse));
+    onepulse normal_1p( .clk(clk), .pb_debounced(wire_normal),  .pb_1pulse(normal_1pulse));
+    onepulse fast_1p(   .clk(clk), .pb_debounced(wire_fast),    .pb_1pulse(fast_1pulse));
 
     //debounce
-    wire rst_debounced, en_debounced, dir_debounced, speed_up_debounced, speed_down_debounced;
-    debounce rst_de(        .clk(clk), .pb(rst), .pb_debounced(rst_debounced));
+    wire en_debounced, dir_debounced, speed_up_debounced, speed_down_debounced;
     debounce en_de(         .clk(clk), .pb(en), .pb_debounced(en_debounced));
     debounce dir_de(        .clk(clk), .pb(dir), .pb_debounced(dir_debounced));
     debounce speed_up_de(   .clk(clk), .pb(speed_up), .pb_debounced(speed_up_debounced));
     debounce speed_down_de( .clk(clk), .pb(speed_down), .pb_debounced(speed_down_debounced));
 
     //1 pulse
-    wire rst_1pulse, en_1pulse, dir_1pulse, speed_up_1pulse, speed_down_1pulse;
-    onepulse rst_1(         .clk(clk), .pb_debounced(rst_debounced), .pb_1pulse(rst_1pulse));
+    wire en_1pulse, speed_up_1pulse, speed_down_1pulse;
     onepulse en_1(          .clk(clk), .pb_debounced(en_debounced), .pb_1pulse(en_1pulse));
-    onepulse dir_1(         .clk(clk), .pb_debounced(dir_debounced), .pb_1pulse(dir_1pulse));
     onepulse speed_up_1(    .clk(clk), .pb_debounced(speed_up_debounced), .pb_1pulse(speed_up_1pulse));
     onepulse speed_down_1(  .clk(clk), .pb_debounced(speed_down_debounced), .pb_1pulse(speed_down_1pulse));
-
 
     reg [3:0] value;
     reg mode = PAUSE, mode_next; //1-bit
@@ -94,19 +93,6 @@ module lab4_1(
     reg [3:0] ten=0, one=0, ten_next, one_next;
     
     reg max_next,min_next;
-
-    //myclk
-    always @(*) begin
-        if(speed==SLOW) begin
-            myclk=wire_slow;
-        end else if(speed==NORMAL) begin
-            myclk=wire_normal;
-        end else if(speed==FAST) begin
-            myclk=wire_fast;
-        end else begin
-            myclk=wire_slow;
-        end
-    end
 
     //7-segment control
     always @(posedge display_clk) begin
@@ -151,7 +137,7 @@ module lab4_1(
         endcase
     end
 
-    always @(posedge myclk,posedge rst) begin
+    always @(posedge clk,posedge rst) begin
         if(rst) begin
             max<=0;
             min<=0;
@@ -174,10 +160,8 @@ module lab4_1(
     end
 
     //START/PAUSE
-    always @(posedge en_1pulse,posedge rst) begin
-        if(rst==1) begin
-            mode_next=PAUSE;
-        end else if(en_1pulse==1) begin
+    always @(*) begin
+        if(en_1pulse) begin
             mode_next = ~mode;
         end else begin
             mode_next = mode;
@@ -198,10 +182,8 @@ module lab4_1(
     end
 
     //speed
-    always @(posedge speed_up_1pulse,posedge speed_down_1pulse,posedge rst) begin
-        if(rst) begin
-            speed_next=SLOW;
-        end else if(speed_up_1pulse==1) begin
+    always @(*) begin
+        if(speed_up_1pulse) begin
             if(speed==SLOW) begin
                 speed_next=NORMAL;
             end else if(speed==NORMAL) begin
@@ -209,7 +191,7 @@ module lab4_1(
             end else if(speed==FAST) begin
                 speed_next=FAST;
             end
-        end else if(speed_down_1pulse==1) begin
+        end else if(speed_down_1pulse) begin
             if(speed==SLOW) begin
                 speed_next=SLOW;
             end else if(speed==NORMAL) begin
@@ -225,36 +207,43 @@ module lab4_1(
     //calculation and boundary
     always @(*) begin
         if(mode==START) begin
-            if(countup) begin
-                if(ten==9 && one==9) begin   //99
-                    max_next=1;min_next=0;
-                    ten_next=9;
-                    one_next=9;
-                end else begin  //normal increment
-                    max_next=0;min_next=0;
-                    if(one==9) begin
+            if((slow_1pulse && speed==SLOW) || (normal_1pulse && speed==NORMAL) || (fast_1pulse && speed==FAST)) begin
+                if(countup) begin
+                    if(ten==9 && one==9) begin   //99
+                        max_next=1;min_next=0;
+                        ten_next=9;
+                        one_next=9;
+                    end else begin  //normal increment
+                        max_next=0;min_next=0;
+                        if(one==9) begin
+                            one_next=0;
+                            ten_next=ten+1;
+                        end else begin
+                            one_next=one+1;
+                            ten_next=ten;
+                        end
+                    end
+                end else begin
+                    if(ten==0 && one==0) begin   //00
+                        min_next=1;max_next=0;
+                        ten_next=0;
                         one_next=0;
-                        ten_next=ten+1;
-                    end else begin
-                        one_next=one+1;
-                        ten_next=ten;
+                    end else begin  //normal decrement
+                        min_next=0;max_next=0;
+                        if(one==0) begin
+                            one_next=9;
+                            ten_next=ten-1;
+                        end else begin
+                            one_next=one-1;
+                            ten_next=ten;
+                        end
                     end
                 end
             end else begin
-                if(ten==0 && one==0) begin   //00
-                    min_next=1;max_next=0;
-                    ten_next=0;
-                    one_next=0;
-                end else begin  //normal decrement
-                    min_next=0;max_next=0;
-                    if(one==0) begin
-                        one_next=9;
-                        ten_next=ten-1;
-                    end else begin
-                        one_next=one-1;
-                        ten_next=ten;
-                    end
-                end
+                ten_next=ten;
+                one_next=one;
+                max_next=max;
+                min_next=min;
             end
         end else begin  //PAUSE
             ten_next=ten;
