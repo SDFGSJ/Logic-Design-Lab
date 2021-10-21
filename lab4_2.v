@@ -79,12 +79,14 @@ module lab4_2(
     clock_divider #(.n(10)) cnt(.clk(clk), .clk_div(display_clk));  //clock to display 7-segment
     clock_divider #(.n(23)) myclkdiv(.clk(clk), .clk_div(myclk));    //not sure abouot the exact time
     
-    //7-segment control
+    //7-segment control(add value=settimenext when its in setting state)
     always @(posedge display_clk) begin
         case(DIGIT)
             4'b1110: begin
                 if(state==DIRECTION) begin
                     value=10;
+                end else if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
+                    value=set_time_next[2];
                 end else begin
                     value=mytime[2];//second;
                 end
@@ -93,6 +95,8 @@ module lab4_2(
             4'b1101: begin
                 if(state==DIRECTION) begin
                     value=10;
+                end else if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
+                    value=set_time_next[1];
                 end else begin
                     value=mytime[1];//tensec;
                 end
@@ -101,6 +105,8 @@ module lab4_2(
             4'b1011: begin
                 if(state==DIRECTION) begin
                     value=10;
+                end else if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
+                    value=set_time_next[0];
                 end else begin
                     value=mytime[0];//minute;
                 end
@@ -109,6 +115,8 @@ module lab4_2(
             4'b0111: begin
                 if(state==DIRECTION) begin
                     value=10;
+                end else if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
+                    value=set_time_next[3];
                 end else begin
                     value=mytime[3];//pointsec;
                 end
@@ -160,10 +168,15 @@ module lab4_2(
         end else begin
             state<=state_next;
             if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
+                /*original
                 mytime[0]<=set_time_next[0];
                 mytime[1]<=set_time_next[1];
                 mytime[2]<=set_time_next[2];
-                mytime[3]<=set_time_next[3];
+                mytime[3]<=set_time_next[3];*/
+                mytime[0] <= (countdown) ? /*mytime[0]*/set_time_next[0] : 0;
+                mytime[1] <= (countdown) ? /*mytime[1]*/set_time_next[1] : 0;
+                mytime[2] <= (countdown) ? /*mytime[2]*/set_time_next[2] : 0;
+                mytime[3] <= (countdown) ? /*mytime[3]*/set_time_next[3] : 0;
             end else if(state==COUNTING) begin
                 if(countdown) begin
                     mytime[0]<=cntdown_time_next[0];
@@ -245,37 +258,46 @@ module lab4_2(
             set_time_next[1]=0;
             set_time_next[2]=0;
             set_time_next[3]=0;
+            goal[0]=0;
+            goal[1]=0;
+            goal[2]=0;
+            goal[3]=0;
         end else begin
             //maintain every variable no matter at which state(including default)
             //then change the digit depend on the corresponding state
+            /*because we have display set_time at 7-segment
             set_time_next[0]=mytime[0];
             set_time_next[1]=mytime[1];
             set_time_next[2]=mytime[2];
-            set_time_next[3]=mytime[3];
+            set_time_next[3]=mytime[3];*/
 
             if(state==MINUTE) begin
-                if(mytime[0]==1) begin //minute has reach its max 1
+                if(set_time_next[0]==1) begin //minute has reach its max 1
                     set_time_next[0]=0;
                 end else begin
-                    set_time_next[0]=mytime[0]+1;
+                    //set_time_next[0]=mytime[0]+1;
+                    set_time_next[0]=set_time_next[0]+1;
                 end
             end else if(state==TENSEC) begin
-                if(mytime[1]==5) begin //tensec has reach its max 5
+                if(set_time_next[1]==5) begin //tensec has reach its max 5
                     set_time_next[1]=0;
                 end else begin
-                    set_time_next[1]=mytime[1]+1;
+                    //set_time_next[1]=mytime[1]+1;
+                    set_time_next[1]=set_time_next[1]+1;
                 end
             end else if(state==SECOND) begin
-                if(mytime[2]==9) begin //second has reach its max 9
+                if(set_time_next[2]==9) begin //second has reach its max 9
                     set_time_next[2]=0;
                 end else begin
-                    set_time_next[2]=mytime[2]+1;
+                    //set_time_next[2]=mytime[2]+1;
+                    set_time_next[2]=set_time_next[2]+1;
                 end
             end else if(state==POINTSEC) begin
-                if(mytime[3]==9) begin   //pointsec has reach its max 9
+                if(set_time_next[3]==9) begin   //pointsec has reach its max 9
                     set_time_next[3]=0;
                 end else begin
-                    set_time_next[3]=mytime[3]+1;
+                    //set_time_next[3]=mytime[3]+1;
+                    set_time_next[3]=set_time_next[3]+1;
                 end
             end
 
