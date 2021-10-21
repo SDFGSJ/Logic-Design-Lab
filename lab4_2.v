@@ -152,16 +152,11 @@ module lab4_2(
 
     always @(posedge myclk,posedge rst) begin
         if(rst) begin
-            //led0<=0;
-
-            //countdown<=0;
-            //mode<=START;
             state<=DIRECTION;
             mytime[0]<=0;
             mytime[1]<=0;
             mytime[2]<=0;
             mytime[3]<=0;
-
         end else begin
             state<=state_next;
             if(state==MINUTE || state==TENSEC || state==SECOND || state==POINTSEC) begin
@@ -200,11 +195,11 @@ module lab4_2(
     end
 
     //count up/down,led0
-    always @(posedge count_down_1pulse/*,posedge rst*/) begin
-        /*if(rst) begin
+    always @(posedge count_down_1pulse,posedge rst) begin
+        if(rst) begin
             countdown<=0;
             led0<=0;
-        end else begin*/
+        end else begin
             if(state==DIRECTION) begin
                 if(count_down_1pulse) begin
                     countdown = ~countdown;
@@ -217,7 +212,7 @@ module lab4_2(
                 countdown = countdown;
                 led0=led0;
             end
-        //end
+        end
     end
 
     //(enter)state transition logic
