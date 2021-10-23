@@ -12,6 +12,25 @@ module clock_divider #(parameter n=25)(
     assign clk_div = num[n-1];
 endmodule
 
+module clock_divider_100ms #(parameter n = 25'd1000_0000)(
+    input clk,
+    output clk_div
+);
+    reg [24:0] num = 0;
+    wire [24:0] next_num;
+
+    always @(posedge clk) begin
+        if(next_num>=n+1) begin
+            num<=0;
+        end else begin
+            num<=next_num;
+        end
+    end
+
+    assign next_num = num + 1;
+    assign clk_div = (num == n) ? 1 : 0;
+endmodule
+
 module debounce(
     input clk,
     input pb,
@@ -74,10 +93,9 @@ module lab4_2(
     reg [3:0] mytime[0:3], mytime_next[0:3];
     reg [3:0] cnt_time[0:3], cnt_time_next[0:3];
 
-    wire display_clk, myclk, myclk_1pulse;
+    wire display_clk, myclk;
     clock_divider #(.n(10)) cnt(.clk(clk), .clk_div(display_clk));  //clock to display 7-segment
-    clock_divider #(.n(23)) myclkdiv(.clk(clk), .clk_div(myclk));
-    onepulse myclk_1(.clk(clk), .pb_debounced(myclk), .pb_1pulse(myclk_1pulse));
+    clock_divider_100ms myclkdiv(.clk(clk), .clk_div(myclk));
 
     //7-segment control
     always @(posedge display_clk) begin
@@ -244,7 +262,7 @@ module lab4_2(
         end else if(state==COUNTING) begin
             state_next = COUNTING;
             if(mode==START) begin
-                if(myclk_1pulse) begin
+                if(myclk) begin
                     if(mytime[0]!=cnt_time[0] || mytime[1]!=cnt_time[1] || mytime[2]!=cnt_time[2] || mytime[3]!=cnt_time[3]) begin  //havent reach the goal
                         if(countdown) begin
                             if(mytime[0]==0 && mytime[1]==0 && mytime[2]==0 && mytime[3]==0) begin
