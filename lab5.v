@@ -112,7 +112,7 @@ module lab5(
     wire display_clk, led_clk, onesec_clk, led_clk_1p;
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
     clock_divider_05Hz led_cd(.clk(clk), .clk_div(led_clk));    //led clk
-    clock_divider_1s onesec(.clk(clk), .clk_div(onesec_clk));   //1s
+    clock_divider_1s onesec(.clk(clk), .clk_div(onesec_clk));   //exact 1s
     onepulse ledclk_1p(.clk(clk), .pb_debounced(led_clk), .pb_1pulse(led_clk_1p));
 
     wire btnl_debounced, btnr_debounced, btnu_debounced, btnd_debounced, btnc_debounced;
@@ -134,13 +134,14 @@ module lab5(
     reg [3:0] my[0:3], my_next[0:3]; //used for display
     reg [15:0] led_next;
     reg [2:0] state=IDLE, state_next;
-    reg [1:0] amount=1, amount_next;
-    reg [3:0] type=ADULT, type_next; //inorder to match my[0:3]
-    reg [2:0] cycle=0, cycle_next;
-    reg [3:0] remain=0, remain_next;
+    reg [1:0] amount=1, amount_next;    //how many tickets does user want
+    reg [3:0] type=ADULT, type_next; //inorder to match the width of my[0:3]
+    reg [2:0] cycle=0, cycle_next;  //for counting 5s
+    reg [3:0] remain=0, remain_next;    //the money to be returned
 
     always @(posedge clk,posedge rst) begin
         if(rst) begin
+            //my,led should be both lighted
             for(i=0;i<4;i=i+1) begin
                 my[i]=10;   //'-'
             end
@@ -178,7 +179,7 @@ module lab5(
         if(state==IDLE) begin
             if(led_clk_1p) begin
                 for(i=0;i<4;i=i+1) begin
-                    my_next[i]=(my[i]==DARK) ? 10 : DARK;    //flash
+                    my_next[i] = (my[i]==DARK) ? 10 : DARK;    //flash
                 end
                 led_next = ~LED;
             end
@@ -233,9 +234,10 @@ module lab5(
                 my_next[0]=my[0];
                 my_next[1]=DARK;
                 my_next[2]=DARK;
-                my_next[3]=1;
+                my_next[3]=1;   //initial amount is 1
             end else if(btnd_1pulse) begin
                 state_next=IDLE;
+                //turn both my,led on
                 for(i=0;i<4;i=i+1) begin
                     my_next[i]=10;
                 end
@@ -265,7 +267,8 @@ module lab5(
                 state_next=PAYMENT;
                 my_next[0]=0;
                 my_next[1]=0;
-                //show the needed money
+
+                //show the needed money(6 situations in total)
                 if(type==CHILD && my[3]==1) begin //child*1 => $5
                     my_next[2]=0;
                     my_next[3]=5;
@@ -287,6 +290,7 @@ module lab5(
                 end
             end else if(btnd_1pulse) begin
                 state_next=IDLE;
+                //turn both my,led on
                 for(i=0;i<4;i=i+1) begin
                     my_next[i]=10;
                 end
@@ -294,6 +298,7 @@ module lab5(
             end
         end else if(state==PAYMENT) begin
             led_next=0;
+
             //deal with input money
             if(btnl_1pulse) begin   //1
                 if(my[1]==9) begin  //09=>10
@@ -327,9 +332,9 @@ module lab5(
             end else if(btnd_1pulse) begin
                 my_next[0]=DARK;
                 my_next[1]=DARK;
-                my_next[2]=0;
-                my_next[3]=0;
-                remain_next=0;
+                my_next[2]=my[0];
+                my_next[3]=my[1];
+                remain_next = 10*my[0] + my[1]; //if cancelled,return the deposited money
                 state_next=CHANGE;
             end else begin
                 state_next=state;
@@ -349,7 +354,7 @@ module lab5(
             if(cycle>5) begin
                 my_next[0]=DARK;
                 my_next[1]=DARK;
-                my_next[2]=0;   //the max remain money=9
+                my_next[2]=0;   //the max remain money=9,so ten must be 0
                 my_next[3]=remain;
                 state_next=CHANGE;
             end else begin
@@ -361,8 +366,10 @@ module lab5(
             my_next[2]=my[2];
             my_next[3]=my[3];
             led_next=0;
-            if(onesec_clk) begin
+
+            if(onesec_clk) begin    //slow down
                 if(my[0]==DARK && my[1]==DARK && my[2]==0 && my[3]==0) begin
+                    //go to IDLE state,reset everything
                     for(i=0;i<4;i=i+1) begin
                         my_next[i]=10;
                     end
@@ -373,7 +380,7 @@ module lab5(
                     cycle_next=0;
                     remain_next=0;
                 end else begin
-                    if(10*my[2] + my[3] >= 5) begin //decrease by 5
+                    if(10*my[2] + my[3] >= 5) begin //if the total>=5,then decrease by 5
                         if(my[3]<5) begin
                             if(my[2]>0) begin   //14-5=09
                                 my_next[3]=my[3]+10-5;
