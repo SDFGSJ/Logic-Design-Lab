@@ -94,8 +94,6 @@ module lab06(
     reg [15:0] led_next;
     reg [2:0] state=STANDBY, state_next;
     reg climbup=1, climbup_next;
-    //reg [1:0] b1_people=0, b1_people_next;
-    //reg [1:0] b2_people=0, b2_people_next;
     reg [1:0] passenger=0, passenger_next;
     reg [6:0] revenue=0, revenue_next;
     reg [6:0] gas_amount=0, gas_amount_next;
@@ -112,7 +110,7 @@ module lab06(
                 my[i]<=0;
             end
             LED<=1; //bus stops at bottom
-            state<=STANDBY;//BOTTOM;
+            state<=STANDBY;
             climbup<=1;
             passenger<=0;
             revenue<=0;
@@ -144,9 +142,9 @@ module lab06(
 
 
     //[6:0] bus position
-    //[15:14] bottom等車人數
-    //[12:11] top等車人數
-    //[10:9] 車上人數
+    //[15:14] people waiting at bottom
+    //[12:11] people waiting at top
+    //[10:9] passenger
     always @(*) begin
         for(i=0;i<4;i=i+1) begin
             my_next[i]=my[i];
@@ -166,7 +164,7 @@ module lab06(
 
 
 
-        //can control led at any state,detect keyboard input(先用buttton測試)
+        //can control led at any state,detect keyboard input
         if(addbottom_1pulse) begin
             if(LED[15:14]==2'b00) begin
                 led_next[15:14]=2'b10;
@@ -188,59 +186,62 @@ module lab06(
         if(work_clk_1p) begin
             if(state==BOTTOM) begin
                 climbup_next=1;
-                //上下車=>上下車拆開，下車完檢查等車人數，沒人就設為standby
+                //getting on,off the bus
                 if(passenger>0 && getdown_finish==1'b0) begin   //have passenger => get down one by one
                     led_next[10:9] = {LED[9], 1'b0};    //left shift
 
                     passenger_next = passenger - 1; //update passenger count
                 end else begin  //no one on the bus => get on all at once
                     getdown_finish_next=1;
-
-                    if(getup_finish==1'b0) begin
-                        led_next[10:9] = LED[15:14];    //people waiting at b1 get on the bus at once
-                        led_next[15:14] = 2'b00;
-                        getup_finish_next=1;
-                    end
-                    
-                    if(LED[15:14]==2'b11) begin //update passenger count
-                        passenger_next = passenger + 2;
-                    end else if(LED[15:14]==2'b10) begin
-                        passenger_next = passenger + 1;
+                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00 && !getup_finish) begin
+                        state_next=STANDBY;
+                    end else begin
+                        if(getup_finish==1'b0) begin
+                            led_next[10:9] = LED[15:14];    //get on the bus at once
+                            led_next[15:14] = 2'b00;
+                            getup_finish_next=1;
+                        end
+                        
+                        if(LED[15:14]==2'b11) begin //update passenger count
+                            passenger_next = passenger + 2;
+                        end else if(LED[15:14]==2'b10) begin
+                            passenger_next = passenger + 1;
+                        end
                     end
                 end
 
-                //收$
+                //get revenue
                 if(getup_finish && !get_revenue_finish) begin
-                    revenue_next=revenue + passenger*30;
-
-                    my_next[2]= (revenue + passenger*30) / 10;
-                    my_next[3]=0;
-
+                    if(revenue + passenger*30 > 90) begin   //beware of $ exceeding the maximum amount
+                        revenue_next=90;
+                        my_next[2]=9;
+                        my_next[3]=0;
+                    end else begin
+                        revenue_next=revenue + passenger*30;
+                        my_next[2]=(revenue + passenger*30) / 10;
+                        my_next[3]=0;
+                    end
                     get_revenue_finish_next=1;
                 end
                 
-                //加油
+                //fueling
                 if(get_revenue_finish) begin
-                    if(gas_amount==20) begin    //fuel already full,go to run state
-                        addfuel_finish_next=1;
-                    end else begin  //fuel not full,add fuel
-                        if(revenue>10) begin
-                            revenue_next=revenue-10;
-                            my_next[2]=my[2]-1;
-                            my_next[3]=0;
+                    if(gas_amount<20 && revenue>=10 && (LED[10:9]==2'b10 || LED[10:9]==2'b11)) begin
+                        revenue_next=revenue-10;
+                        my_next[2]=my[2]-1;
+                        my_next[3]=0;
 
-                            if(gas_amount+10 >20) begin //超過最大油量
-                                gas_amount_next=20;
-                                my_next[0]=2;
-                                my_next[1]=0;
-                            end else begin
-                                gas_amount_next=gas_amount+10;
-                                my_next[0]=my[0]+1;
-                                my_next[1]=my[1];
-                            end
-                        end else begin  //沒錢買油 or 油已滿
-                            addfuel_finish_next=1;
+                        if(gas_amount+10 > 20) begin //exceed the maximum gas amount
+                            gas_amount_next=20;
+                            my_next[0]=2;
+                            my_next[1]=0;
+                        end else begin
+                            gas_amount_next=gas_amount+10;
+                            my_next[0]=my[0]+1;
+                            my_next[1]=my[1];
                         end
+                    end else begin
+                        addfuel_finish_next=1;
                     end
                 end
 
@@ -255,60 +256,64 @@ module lab06(
                 end
             end else if(state==TOP) begin
                 climbup_next=0;
-                //上下車
+                //getting on,off the bus
                 if(passenger>0 && !getdown_finish) begin   //have passenger => get down one by one
                     led_next[10:9] = {LED[9], 1'b0};    //left shift
 
                     passenger_next = passenger - 1; //update passenger count
                 end else begin  //no one on the bus => get on all at once
                     getdown_finish_next=1;
+                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00 && !getup_finish) begin
+                        state_next=STANDBY;
+                    end else begin
+                        if(!getup_finish) begin
+                            led_next[10:9] = LED[12:11];    //get on the bus at once
+                            led_next[12:11] = 2'b00;
+                            getup_finish_next=1;
+                        end
+                        
 
-                    if(getup_finish==1'b0) begin
-                        led_next[10:9] = LED[12:11];    //people waiting at b1 get on the bus at once
-                        led_next[12:11] = 2'b00;
-                        getup_finish_next=1;
+                        if(LED[12:11]==2'b11) begin //update passenger count
+                            passenger_next = passenger + 2;
+                        end else if(LED[12:11]==2'b10) begin
+                            passenger_next = passenger + 1;
+                        end
                     end
                     
-
-                    if(LED[12:11]==2'b11) begin //update passenger count
-                        passenger_next = passenger + 2;
-                    end else if(LED[12:11]==2'b10) begin
-                        passenger_next = passenger + 1;
-                    end
                 end
 
-                //收$
+                //get revenue
                 if(getup_finish && !get_revenue_finish) begin
-                    revenue_next=revenue + passenger*20;
-
-                    my_next[2] = (revenue + passenger*20) / 10;
-                    my_next[3]=0;
-
+                    if(revenue + passenger*20 > 90) begin   //beware of exceeding the maximum amount
+                        revenue_next=90;
+                        my_next[2]=9;
+                        my_next[3]=0;
+                    end else begin
+                        revenue_next=revenue + passenger*20;
+                        my_next[2]=(revenue + passenger*20) / 10;
+                        my_next[3]=0;
+                    end
                     get_revenue_finish_next=1;
                 end
                 
-                //加油
+                //fueling
                 if(get_revenue_finish) begin
-                    if(gas_amount==20) begin    //fuel already full,go to run state
-                        addfuel_finish_next=1;
-                    end else begin  //fuel not full,add fuel
-                        if(revenue>10) begin
-                            revenue_next=revenue-10;
-                            my_next[2]=my[2]-1;
-                            my_next[3]=0;
+                    if(gas_amount<20 && revenue>=10 && (LED[10:9]==2'b10 || LED[10:9]==2'b11)) begin
+                        revenue_next=revenue-10;
+                        my_next[2]=my[2]-1;
+                        my_next[3]=0;
 
-                            if(gas_amount+10 >20) begin //超過最大油量
-                                gas_amount_next=20;
-                                my_next[0]=2;
-                                my_next[1]=0;
-                            end else begin
-                                gas_amount_next=gas_amount+10;
-                                my_next[0]=my[0]+1;
-                                my_next[1]=my[1];
-                            end
-                        end else begin  //沒錢買油 or 油已滿
-                            addfuel_finish_next=1;
+                        if(gas_amount+10 > 20) begin //exceed the maximum gas amount
+                            gas_amount_next=20;
+                            my_next[0]=2;
+                            my_next[1]=0;
+                        end else begin
+                            gas_amount_next=gas_amount+10;
+                            my_next[0]=my[0]+1;
+                            my_next[1]=my[1];
                         end
+                    end else begin
+                        addfuel_finish_next=1;
                     end
                 end
 
@@ -322,53 +327,43 @@ module lab06(
                     addfuel_finish_next=0;
                 end
             end else if(state==RUN) begin
-                //到站(TOP,BOTTOM,G2)，更新油量
-                if(climbup) begin   //往上爬(left shift)
-                    if(LED[6:0]==7'b0000100) begin  //準備到中間的加油站
-                        //扣油量
-                        if(passenger>0) begin   //有乘客就扣油量
-                            gas_amount_next = gas_amount - passenger*5;
-                            my_next[0] = (gas_amount - passenger*5)/10;
-                            my_next[1] = (gas_amount - passenger*5)%10;
-                        end/* else begin  //沒乘客就不用扣
-                            
-                        end*/
-                        led_next[6:0]=7'b0001000;
-                    end else if(LED[6:0]==7'b0001000) begin  //到中間的加油站
-                        if(gas_amount==20) begin    //油已滿，繼續走
-                            led_next[6:0]=7'b0010000;
-                        end else begin  //fuel not full,add fuel
-                            if(revenue>10) begin
-                                led_next[6:0]=7'b0001000;
-                                
-                                revenue_next=revenue-10;
-                                my_next[2]=my[2]-1;
-                                my_next[3]=0;
+                //reach station(TOP,BOTTOM,G2),update the gas amonut
 
-                                if(gas_amount+10 >20) begin //超過最大油量
-                                    gas_amount_next=20;
-                                    my_next[0]=2;
-                                    my_next[1]=0;
-                                end else begin
-                                    gas_amount_next=gas_amount+10;
-                                    my_next[0]=my[0]+1;
-                                    my_next[1]=my[1];
-                                end
-                            end else begin  //沒錢買油 => 繼續走
-                                led_next[6:0]=7'b0010000;
-                            end
-                        end
-                    end else if(LED[6:0]==7'b0100000) begin //準備到top
-                        //扣油量
-                        if(passenger>0) begin   //有乘客就扣油量
+                if(climbup) begin   //left shift
+                    if(LED[6:0] == 7'b0000100) begin  //about to reach the center gas station
+                        if(passenger>0) begin   //if there's passenger,decrease the gas amount
                             gas_amount_next = gas_amount - passenger*5;
-                            my_next[0] = (gas_amount - passenger*5)/10;
-                            my_next[1] = (gas_amount - passenger*5)%10;
-                        end/* else begin  //沒乘客就不用扣
-                            
-                        end*/
+                            my_next[0] = (gas_amount - passenger*5) / 10;
+                            my_next[1] = (gas_amount - passenger*5) % 10;
+                        end
+                        led_next[6:0] = 7'b0001000;
+                    end else if(LED[6:0] == 7'b0001000) begin  //reach the center gas station
+                        if(gas_amount<20 && revenue>=10 && (LED[10:9]==2'b10 || LED[10:9]==2'b11)) begin    //fueling only when there's passenger
+                            revenue_next=revenue-10;
+                            my_next[2]=my[2]-1;
+                            my_next[3]=0;
+
+                            if(gas_amount+10 > 20) begin //exceed the maximum gas amount
+                                gas_amount_next=20;
+                                my_next[0]=2;
+                                my_next[1]=0;
+                            end else begin
+                                gas_amount_next=gas_amount+10;
+                                my_next[0]=my[0]+1;
+                                my_next[1]=my[1];
+                            end
+                            led_next[6:0]=7'b0001000;
+                        end else begin
+                            led_next[6:0]=7'b0010000;
+                        end
+                    end else if(LED[6:0]==7'b0100000) begin //about to reach top
+                        if(passenger>0) begin   //if there's passenger,decrease the gas amount
+                            gas_amount_next = gas_amount - passenger*5;
+                            my_next[0] = (gas_amount - passenger*5) / 10;
+                            my_next[1] = (gas_amount - passenger*5) % 10;
+                        end
                         led_next[6:0]=7'b1000000;
-                    end else if(LED[6:0]==7'b1000000) begin //到top
+                    end else if(LED[6:0] == 7'b1000000) begin //reach the top
                         getdown_finish_next=0;
                         getup_finish_next=0;
                         addfuel_finish_next=0;
@@ -376,54 +371,43 @@ module lab06(
                         climbup_next=0;
                         state_next=TOP;
                     end else begin
-                        led_next[6:0]={LED[5:0],1'b0};  //往上走
+                        led_next[6:0]={LED[5:0],1'b0};  //left shift
                     end
-                end else begin  //往下走(right shift)
-                    if(LED[6:0]==7'b0010000) begin  //準備到中間的加油站
-                        //扣油量
-                        if(passenger>0) begin   //有乘客就扣油量
+                end else begin  //right shift
+                    if(LED[6:0]==7'b0010000) begin  //above to reach center gas station
+                        if(passenger>0) begin   //if there's passenger,decrease the gas amount
                             gas_amount_next = gas_amount - passenger*5;
-                            my_next[0] = (gas_amount - passenger*5)/10;
-                            my_next[1] = (gas_amount - passenger*5)%10;
-                        end/* else begin  //沒乘客就不用扣
-                            
-                        end*/
-                        led_next[6:0]=7'b0001000;
-                    end else if(LED[6:0]==7'b0001000) begin //到中間的加油站
-                        if(gas_amount==20) begin    //油已滿，繼續走
-                            led_next[6:0]=7'b0000100;
-                        end else begin  //fuel not full,add fuel
-                            if(revenue>10) begin
-                                led_next[6:0]=7'b0001000;
-                                
-                                revenue_next=revenue-10;
-                                my_next[2]=my[2]-1;
-                                my_next[3]=0;
-
-                                if(gas_amount+10 >20) begin //超過最大油量
-                                    gas_amount_next=20;
-                                    my_next[0]=2;
-                                    my_next[1]=0;
-                                end else begin
-                                    gas_amount_next=gas_amount+10;
-                                    my_next[0]=my[0]+1;
-                                    my_next[1]=my[1];
-                                end
-                            end else begin  //沒錢買油 => 繼續走
-                                led_next[6:0]=7'b0000100;
-                            end
+                            my_next[0] = (gas_amount - passenger*5) / 10;
+                            my_next[1] = (gas_amount - passenger*5) % 10;
                         end
-                    end else if(LED[6:0]==7'b0000010) begin //準備到bottom
-                        //扣油量
-                        if(passenger>0) begin   //有乘客就扣油量
+                        led_next[6:0] = 7'b0001000;
+                    end else if(LED[6:0] == 7'b0001000) begin //reach the center gas station
+                        if(gas_amount<20 && revenue>=10 && (LED[10:9]==2'b10 || LED[10:9]==2'b11)) begin    //fueling only when there's passenger
+                            revenue_next=revenue-10;
+                            my_next[2]=my[2]-1;
+                            my_next[3]=0;
+
+                            if(gas_amount+10 > 20) begin //exceed the maximum gas amount
+                                gas_amount_next=20;
+                                my_next[0]=2;
+                                my_next[1]=0;
+                            end else begin
+                                gas_amount_next=gas_amount+10;
+                                my_next[0]=my[0]+1;
+                                my_next[1]=my[1];
+                            end
+                            led_next[6:0] = 7'b0001000;
+                        end else begin
+                            led_next[6:0] = 7'b0000100;
+                        end
+                    end else if(LED[6:0]==7'b0000010) begin //above to reach bottom
+                        if(passenger>0) begin   //if there's passenger,decrease the gas amount
                             gas_amount_next = gas_amount - passenger*5;
-                            my_next[0] = (gas_amount - passenger*5)/10;
-                            my_next[1] = (gas_amount - passenger*5)%10;
-                        end/* else begin  //沒乘客就不用扣
-                            
-                        end*/
-                        led_next[6:0]=7'b0000001;
-                    end else if(LED[6:0]==7'b0000001) begin //到bottom
+                            my_next[0] = (gas_amount - passenger*5) / 10;
+                            my_next[1] = (gas_amount - passenger*5) % 10;
+                        end
+                        led_next[6:0]=7'b0000001;   //move to bottom
+                    end else if(LED[6:0]==7'b0000001) begin //reach bottom
                         getdown_finish_next=0;
                         getup_finish_next=0;
                         addfuel_finish_next=0;
@@ -431,18 +415,18 @@ module lab06(
                         climbup_next=1;
                         state_next=BOTTOM;
                     end else begin
-                        led_next[6:0]={1'b0,LED[6:1]};  //往下走
+                        led_next[6:0]={1'b0,LED[6:1]};  //right shift
                     end
                 end
             end else if(state==STANDBY) begin
                 //maintain everything
                 //check both bus stop
-                if(LED[6:0]==7'b0000001 && (LED[15:14]==2'b10 || LED[15:14]==2'b11)) begin //車在bottom && bottom有人
+                if(LED[6:0]==7'b0000001 && (LED[15:14]==2'b10 || LED[15:14]==2'b11)) begin //bus at bottom && someone waiting at bottom
                     state_next=BOTTOM;
-                end else if(LED[6:0]==7'b1000000 && (LED[12:11]==2'b10 || LED[12:11]==2'b11)) begin   //車在top && top有人
+                end else if(LED[6:0]==7'b1000000 && (LED[12:11]==2'b10 || LED[12:11]==2'b11)) begin   //bus at top && someone waiting at top
                     state_next=TOP;
                 end else if((LED[6:0]==7'b0000001 && (LED[12:11]==2'b10 || LED[12:11]==2'b11)) ||
-                            (LED[6:0]==7'b1000000 && (LED[15:14]==2'b10 || LED[15:14]==2'b11)) ) begin  //車在bottom,top有人 || 車在top,bottom有人
+                            (LED[6:0]==7'b1000000 && (LED[15:14]==2'b10 || LED[15:14]==2'b11)) ) begin  //bus at bottom,someone waiting at top || bus at btop,someone waiting at bottom
                     state_next=RUN;
                 end else begin
                     state_next=STANDBY;
