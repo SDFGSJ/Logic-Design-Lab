@@ -1,35 +1,3 @@
-module debounce(
-    input clk,
-    input pb,
-    output pb_debounced
-);
-    reg [3:0] shift_reg;
-
-    always @(posedge clk) begin
-        shift_reg[3:1] <= shift_reg[2:0];
-        shift_reg[0] <= pb;
-    end
-
-    assign pb_debounced = (shift_reg==4'b1111) ? 1'b1 : 1'b0;
-endmodule
-
-module onepulse(
-    input clk,
-    input pb_debounced,
-    output reg pb_1pulse
-);
-    reg pb_debounced_delay;
-
-    always @(posedge clk) begin
-        if(pb_debounced==1'b1 && pb_debounced_delay==1'b0) begin
-            pb_1pulse <= 1'b1;
-        end else begin
-            pb_1pulse <= 1'b0;
-        end
-        pb_debounced_delay <= pb_debounced;
-    end
-endmodule
-
 module clock_divider #(parameter n=25)(
     input clk,
     output clk_div
@@ -44,6 +12,7 @@ module clock_divider #(parameter n=25)(
     assign clk_div = num[n-1];
 endmodule
 
+//remember to remove debounce,onepulse
 module lab06(
     input clk,
     input rst,
@@ -51,27 +20,19 @@ module lab06(
     inout PS2_DATA,
     output reg [3:0] DIGIT,
     output reg [6:0] DISPLAY,
-    output reg [15:0] LED,
-    input addb1,
-    input addb2
+    output reg [15:0] LED
 );
     parameter BOTTOM = 0;
     parameter TOP = 1;
     parameter STANDBY = 2;
-    parameter G2 = 3;
-    parameter RUN = 4;
+    parameter RUN = 3;
 
 
     wire display_clk, work_clk,work_clk_1p;
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
-    clock_divider #(.n(26)) work(.clk(clk), .clk_div(work_clk));    //clk to operate FSM
+    clock_divider #(.n(26)) work(.clk(clk), .clk_div(work_clk));
     onepulse workclk_1p(.clk(clk),.pb_debounced(work_clk),.pb_1pulse(work_clk_1p));
 
-    wire addbottom_debounced, addtop_debounced, addbottom_1pulse, addtop_1pulse;
-    debounce addb1_de(.clk(clk),.pb(addb1),.pb_debounced(addbottom_debounced));
-    debounce addb2_de(.clk(clk),.pb(addb2),.pb_debounced(addtop_debounced));
-    onepulse addb1_op(.clk(clk),.pb_debounced(addbottom_debounced),.pb_1pulse(addbottom_1pulse));
-    onepulse addb2_op(.clk(clk),.pb_debounced(addtop_debounced),.pb_1pulse(addtop_1pulse));
 
     parameter [8:0] LEFT_SHIFT_CODES  = 9'b0_0001_0010;
 	parameter [8:0] RIGHT_SHIFT_CODES = 9'b0_0101_1001;
@@ -133,7 +94,6 @@ module lab06(
     reg getdown_finish=0, getdown_finish_next;
     reg getup_finish=0, getup_finish_next;
     reg get_revenue_finish=0, get_revenue_finish_next;
-    reg addfuel_finish=0, addfuel_finish_next;
 
     always @(posedge clk,posedge rst) begin
         if(rst) begin
@@ -151,7 +111,6 @@ module lab06(
             getdown_finish<=0;
             getup_finish<=0;
             get_revenue_finish<=0;
-            addfuel_finish<=0;
         end else begin
             for(i=0;i<4;i=i+1) begin
                 my[i]<=my_next[i];
@@ -167,7 +126,6 @@ module lab06(
             getdown_finish<=getdown_finish_next;
             getup_finish<=getup_finish_next;
             get_revenue_finish<=get_revenue_finish_next;
-            addfuel_finish<=addfuel_finish_next;
         end
     end
 
@@ -191,7 +149,6 @@ module lab06(
         getdown_finish_next = getdown_finish;
         getup_finish_next = getup_finish;
         get_revenue_finish_next = get_revenue_finish;
-        addfuel_finish_next = addfuel_finish;
 
         if(key_valid && key_down[last_change]) begin
             if(key_num!=4'b1111) begin
@@ -213,55 +170,37 @@ module lab06(
                             led_next[12:11]=2'b11;
                         end
                     end
-                end/* else begin
-                    //dont know what to write
-                end*/
+                end
             end
         end
-
-        //can control led at any state,detect keyboard input
-        /*if(addbottom_1pulse) begin
-            if(LED[15:14]==2'b00) begin
-                led_next[15:14]=2'b10;
-            end else if(LED[15:14]==2'b10) begin
-                led_next[15:14]=2'b11;
-            end else begin
-                led_next[15:14]=2'b11;
-            end
-        end else if(addtop_1pulse) begin
-            if(LED[12:11]==2'b00) begin
-                led_next[12:11]=2'b10;
-            end else if(LED[12:11]==2'b10) begin
-                led_next[12:11]=2'b11;
-            end else begin
-                led_next[12:11]=2'b11;
-            end
-        end*/
 
         if(work_clk_1p) begin
             if(state==BOTTOM) begin
                 climbup_next=1;
-                //getting on,off the bus
-                if(passenger>0 && getdown_finish==1'b0) begin   //have passenger => get down one by one
+                //get off the bus
+                if(passenger>0 && !getdown_finish) begin   //have passenger => get down one by one
                     led_next[10:9] = {LED[9], 1'b0};    //left shift
 
                     passenger_next = passenger - 1; //update passenger count
-                end else begin  //no one on the bus => get on all at once
+                end else begin  //no passenger => finish get down
                     getdown_finish_next=1;
-                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00 && !getup_finish) begin
+                end
+
+                //get on the bus
+                if(getdown_finish && !getup_finish) begin
+                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00) begin
                         state_next=STANDBY;
                     end else begin
-                        if(getup_finish==1'b0) begin
-                            led_next[10:9] = LED[15:14];    //get on the bus at once
-                            led_next[15:14] = 2'b00;
-                            getup_finish_next=1;
-                        end
+                        led_next[10:9] = LED[15:14];    //get on the bus at once
+                        led_next[15:14] = 2'b00;
                         
                         if(LED[15:14]==2'b11) begin //update passenger count
                             passenger_next = passenger + 2;
                         end else if(LED[15:14]==2'b10) begin
                             passenger_next = passenger + 1;
                         end
+
+                        getup_finish_next=1;
                     end
                 end
 
@@ -295,46 +234,42 @@ module lab06(
                             my_next[0]=my[0]+1;
                             my_next[1]=my[1];
                         end
-                    end else begin
-                        addfuel_finish_next=1;
+                    end else begin  //finish fueling => start to run
+                        state_next=RUN;
+
+                        //reset all flags before change state
+                        getdown_finish_next=0;
+                        getup_finish_next=0;
+                        get_revenue_finish_next=0;
                     end
-                end
-
-                if(addfuel_finish) begin
-                    state_next=RUN;
-
-                    //reset all flags before change state
-                    getdown_finish_next=0;
-                    getup_finish_next=0;
-                    get_revenue_finish_next=0;
-                    addfuel_finish_next=0;
                 end
             end else if(state==TOP) begin
                 climbup_next=0;
-                //getting on,off the bus
+                //get off the bus
                 if(passenger>0 && !getdown_finish) begin   //have passenger => get down one by one
                     led_next[10:9] = {LED[9], 1'b0};    //left shift
 
                     passenger_next = passenger - 1; //update passenger count
-                end else begin  //no one on the bus => get on all at once
+                end else begin
                     getdown_finish_next=1;
-                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00 && !getup_finish) begin
+                end
+
+                //get on the bus
+                if(getdown_finish && !getup_finish) begin
+                    if(LED[15:14]==2'b00 && LED[12:11]==2'b00) begin
                         state_next=STANDBY;
                     end else begin
-                        if(!getup_finish) begin
-                            led_next[10:9] = LED[12:11];    //get on the bus at once
-                            led_next[12:11] = 2'b00;
-                            getup_finish_next=1;
-                        end
+                        led_next[10:9] = LED[12:11];    //get on the bus at once
+                        led_next[12:11] = 2'b00;
                         
-
                         if(LED[12:11]==2'b11) begin //update passenger count
                             passenger_next = passenger + 2;
                         end else if(LED[12:11]==2'b10) begin
                             passenger_next = passenger + 1;
                         end
+
+                        getup_finish_next=1;
                     end
-                    
                 end
 
                 //get revenue
@@ -344,7 +279,7 @@ module lab06(
                         my_next[2]=9;
                         my_next[3]=0;
                     end else begin
-                        revenue_next=revenue + passenger*20;
+                        revenue_next = revenue + passenger*20;
                         my_next[2]=(revenue + passenger*20) / 10;
                         my_next[3]=0;
                     end
@@ -367,19 +302,14 @@ module lab06(
                             my_next[0]=my[0]+1;
                             my_next[1]=my[1];
                         end
-                    end else begin
-                        addfuel_finish_next=1;
+                    end else begin  //finish fueling => start to run
+                        state_next=RUN;
+
+                        //reset all flags before change state
+                        getdown_finish_next=0;
+                        getup_finish_next=0;
+                        get_revenue_finish_next=0;
                     end
-                end
-
-                if(addfuel_finish) begin
-                    state_next=RUN;
-
-                    //reset all flags before change state
-                    getdown_finish_next=0;
-                    getup_finish_next=0;
-                    get_revenue_finish_next=0;
-                    addfuel_finish_next=0;
                 end
             end else if(state==RUN) begin
                 //reach station(TOP,BOTTOM,G2),update the gas amonut
@@ -417,12 +347,27 @@ module lab06(
                             my_next[0] = (gas_amount - passenger*5) / 10;
                             my_next[1] = (gas_amount - passenger*5) % 10;
                         end
+
+                        //no one on the bus && someone waiting at top => can directly get on the bus
+                        if(LED[10:9]==2'b00 && (LED[12:11]==2'b10 || LED[12:11]==2'b11)) begin
+                            led_next[10:9]=LED[12:11];
+                            led_next[12:11]=2'b00;
+
+                            if(LED[12:11]==2'b10) begin
+                                passenger_next=passenger+1;
+                            end else if(LED[12:11]==2'b11) begin
+                                passenger_next=passenger+2;
+                            end
+
+                            getdown_finish_next=1;
+                            getup_finish_next=1;
+                        end else begin  //someone on the bus,get down one by one at top
+                            getdown_finish_next=0;
+                            getup_finish_next=0;
+                            get_revenue_finish_next=0;
+                        end
                         led_next[6:0]=7'b1000000;
                     end else if(LED[6:0] == 7'b1000000) begin //reach the top
-                        getdown_finish_next=0;
-                        getup_finish_next=0;
-                        addfuel_finish_next=0;
-                        get_revenue_finish_next=0;
                         climbup_next=0;
                         state_next=TOP;
                     end else begin
@@ -461,12 +406,27 @@ module lab06(
                             my_next[0] = (gas_amount - passenger*5) / 10;
                             my_next[1] = (gas_amount - passenger*5) % 10;
                         end
+
+                        //no one on the bus && someone waiting at bottom => can directly get on the bus
+                        if(LED[10:9]==2'b00 && (LED[15:14]==2'b10 || LED[15:14]==2'b11)) begin
+                            led_next[10:9]=LED[15:14];
+                            led_next[15:14]=2'b00;
+
+                            if(LED[15:14]==2'b10) begin
+                                passenger_next=passenger+1;
+                            end else if(LED[15:14]==2'b11) begin
+                                passenger_next=passenger+2;
+                            end
+
+                            getdown_finish_next=1;
+                            getup_finish_next=1;
+                        end else begin
+                            getdown_finish_next=0;
+                            getup_finish_next=0;
+                            get_revenue_finish_next=0;
+                        end
                         led_next[6:0]=7'b0000001;   //move to bottom
                     end else if(LED[6:0]==7'b0000001) begin //reach bottom
-                        getdown_finish_next=0;
-                        getup_finish_next=0;
-                        addfuel_finish_next=0;
-                        get_revenue_finish_next=0;
                         climbup_next=1;
                         state_next=BOTTOM;
                     end else begin
