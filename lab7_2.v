@@ -15,6 +15,7 @@ endmodule
 module mem_addr_gen2(
     input clk,
     input rst,
+    input hold,
     /*inout PS2_CLK,
     inout PS2_DATA,*/
     input [9:0] h_cnt,
@@ -35,44 +36,43 @@ module mem_addr_gen2(
         .rst(rst),
         .clk(clk)
     );
-    assign pixel_addr = ( (h_cnt>>1) + 320*(v_cnt>>1) )% 76800;  //640*480 --> 320*240 original
     */
     always @(*) begin
         //1st row,all clockwise 90
         //formula:(Max-(h_cnt>>1))*320 + (min+(v_cnt>>1)). Max/min = max/min num of the horizontal range
         if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
 
-            pixel_addr = ( (80-(h_cnt>>1) )*320 + (v_cnt>>1) ) % 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ( (80-(h_cnt>>1) )*320 + (v_cnt>>1) ) % 76800;
 
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
 
-            pixel_addr = ((160-(h_cnt>>1) )*320 + 80+(v_cnt>>1) )% 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ((160-(h_cnt>>1) )*320 + 80+(v_cnt>>1) )% 76800;
 
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
 
-            pixel_addr = ((240-(h_cnt>>1) )*320 + 160+(v_cnt>>1) )% 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ((240-(h_cnt>>1) )*320 + 160+(v_cnt>>1) )% 76800;
 
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
 
-            pixel_addr = ((320-(h_cnt>>1) )*320 + 240+(v_cnt>>1) )% 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ((320-(h_cnt>>1) )*320 + 240+(v_cnt>>1) )% 76800;
 
         //2nd row,all counter clockwise 90
         //formula:((h_cnt>>1)+80-min)*320 + (80+Max-(v_cnt>>1)) Max/min=max/min num of the horizontal range
         end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin
 
-            pixel_addr = ( ((h_cnt>>1)+80-0 )*320 + ( 80+80-(v_cnt>>1) ) ) % 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ( ((h_cnt>>1)+80-0 )*320 + ( 80+80-(v_cnt>>1) ) ) % 76800;
 
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin
 
-            pixel_addr = ( ((h_cnt>>1)+80-80)*320 + ( 80+160-(v_cnt>>1)) ) % 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ( ((h_cnt>>1)+80-80)*320 + ( 80+160-(v_cnt>>1)) ) % 76800;
 
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin
 
-            pixel_addr = ( ((h_cnt>>1)+80-160)*320 + ( 80+240-(v_cnt>>1)) ) % 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ( ((h_cnt>>1)+80-160)*320 + ( 80+240-(v_cnt>>1)) ) % 76800;
 
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin
 
-            pixel_addr = ( ((h_cnt>>1)+80-240)*320 + ( 80+320-(v_cnt>>1)) ) % 76800;
+            pixel_addr = (hold) ? ((h_cnt>>1)+320*(v_cnt>>1))%76800 : ( ((h_cnt>>1)+80-240)*320 + ( 80+320-(v_cnt>>1)) ) % 76800;
 
         //3rd row,not yet
         end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin
@@ -95,8 +95,6 @@ module mem_addr_gen2(
             pixel_addr = ( (h_cnt>>1) + 320*(v_cnt>>1) )% 76800;  //640*480 --> 320*240 original
         end
     end
-    //( (h_cnt>>1) + 320*(v_cnt>>1) )% 76800;:上下翻轉
-    //( (v_cnt>>1) + 320*(h_cnt>>1) )% 76800;:以左上右下的對角線翻轉
 endmodule
 
 module lab7_2(
@@ -130,6 +128,7 @@ module lab7_2(
     mem_addr_gen2 mem_addr_gen_inst(
         .clk(clk_22),
         .rst(rst),
+        .hold(hold),
         .h_cnt(h_cnt),
         .v_cnt(v_cnt),
         .pixel_addr(pixel_addr)
