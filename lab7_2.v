@@ -59,7 +59,6 @@ module mem_addr_gen2(
         .clk(clk)
     );
 
-
     integer i;
     reg [1:0] cnt[0:11];
     reg [1:0] cnt_next[0:11];
@@ -78,16 +77,341 @@ module mem_addr_gen2(
         end
     end
     
-
-    //works,but keyboard cant sense well
     always @(*) begin
         for(i=0;i<12;i=i+1) begin
             cnt_next[i]=cnt[i];
         end
         ispass_next=ispass;
 
+        if(hold || ispass) begin
+            pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+        end else begin
+            if(key_valid && key_down[last_change]) begin
+                if(key_num!=4'b1111) begin
+                    if(!shift_down) begin
+                        if(key_num==4'b0000) begin
+                            cnt_next[0]=cnt[0]+1;
+                            if(cnt[0]==0) begin  //0
+                                pixel_addr = ( 320*(79-(h_cnt>>1)) + (0+v_cnt>>1) )%76800; //90
+                            end else if(cnt[0]==1) begin //90
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[0]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-0) + (79-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[0]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0001) begin
+                            cnt_next[1]=cnt[1]+1;
+                            if(cnt[1]==0) begin  //0
+                                pixel_addr = ( 320*(159-(h_cnt>>1)) + (80+(v_cnt>>1)) )%76800; //90
+                            end else if(cnt[1]==1) begin //90
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[1]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-80) + (159-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[1]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0010) begin
+                            cnt_next[2]=cnt[2]+1;
+                            if(cnt[2]==0) begin  //0
+                                pixel_addr = ( 320*(239-(h_cnt>>1)) + (160+(v_cnt>>1)) )%76800;    //90
+                            end else if(cnt[2]==1) begin //90
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[2]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-160) + (239-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[2]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0011) begin
+                            cnt_next[3]=cnt[3]+1;
+                            if(cnt[3]==0) begin  //0
+                                pixel_addr = ( 320*(319-(h_cnt>>1)) + (240+(v_cnt>>1)) )%76800; //90
+                            end else if(cnt[3]==1) begin //90
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[3]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-240) + (319-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[3]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0100) begin
+                            cnt_next[4]=cnt[4]+1;
+                            if(cnt[4]==0) begin  //0
+                                pixel_addr = ( 320*(79-(h_cnt>>1)+80) + ((v_cnt>>1)+0-80) )%76800; //90
+                            end else if(cnt[4]==1) begin //90
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[4]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-0+80) + (79-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[4]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0101) begin
+                            cnt_next[5]=cnt[5]+1;
+                            if(cnt[5]==0) begin  //0
+                                pixel_addr = ( 320*(159-(h_cnt>>1)+80) + ((v_cnt>>1)+80-80) )%76800; //90
+                            end else if(cnt[5]==1) begin //90
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[5]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[5]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0110) begin
+                            cnt_next[6]=cnt[6]+1;
+                            if(cnt[6]==0) begin  //0
+                                pixel_addr = ( 320*(239-(h_cnt>>1)+80) + (160+(v_cnt>>1)-80) )%76800; //90
+                            end else if(cnt[6]==1) begin //90
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[6]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-160+80) + (239-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[6]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0111) begin
+                            cnt_next[7]=cnt[7]+1;
+                            if(cnt[7]==0) begin  //0
+                                pixel_addr = ( 320*(319-(h_cnt>>1)+80) + (240+(v_cnt>>1)-80) )%76800;  //90
+                            end else if(cnt[7]==1) begin //90
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[7]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[7]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1000) begin
+                            cnt_next[8]=cnt[8]+1;
+                            if(cnt[8]==0) begin  //0
+                                pixel_addr = ( 320*(79-(h_cnt>>1)+160) + (0+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[8]==1) begin //90
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[8]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-0+160) + (79-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[8]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1001) begin
+                            cnt_next[9]=cnt[9]+1;
+                            if(cnt[9]==0) begin  //0
+                                pixel_addr = ( 320*(159-(h_cnt>>1)+160) + (80+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[9]==1) begin //90
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[9]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-80+160) + (159-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[9]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1010) begin
+                            cnt_next[10]=cnt[10]+1;
+                            if(cnt[10]==0) begin  //0
+                                pixel_addr = ( 320*(239-(h_cnt>>1)+160) + (160+(v_cnt>>1)-160) )%76800;  //90
+                            end else if(cnt[10]==1) begin //90
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[10]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-160+160) + (239-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[10]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1011) begin
+                            cnt_next[11]=cnt[11]+1;
+                            if(cnt[11]==0) begin  //0
+                                pixel_addr = ( 320*(319-(h_cnt>>1)+160) + (240+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[11]==1) begin //90
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else if(cnt[11]==2) begin //180
+                                pixel_addr = ( 320*((h_cnt>>1)-240+160) + (319-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[11]==3) begin //270
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end
+                    end else begin
+                        if(key_num==4'b0000) begin
+                            cnt_next[0]=cnt[0]-1;
+                            if(cnt[0]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-0) + (79-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[0]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[0]==2) begin //180
+                                pixel_addr = ( 320*(79-(h_cnt>>1)) + (0+v_cnt>>1) )%76800; //90
+                            end else if(cnt[0]==3) begin //270
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0001) begin
+                            cnt_next[1]=cnt[1]-1;
+                            if(cnt[1]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-80) + (159-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[1]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[1]==2) begin //180
+                                pixel_addr = ( 320*(159-(h_cnt>>1)) + (80+(v_cnt>>1)) )%76800; //90
+                            end else if(cnt[1]==3) begin //270
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0010) begin
+                            cnt_next[2]=cnt[2]-1;
+                            if(cnt[2]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-160) + (239-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[2]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[2]==2) begin //180
+                                pixel_addr = ( 320*(239-(h_cnt>>1)) + (160+(v_cnt>>1)) )%76800;    //90
+                            end else if(cnt[2]==3) begin //270
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0011) begin
+                            cnt_next[3]=cnt[3]-1;
+                            if(cnt[3]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-240) + (319-(v_cnt>>1)) )%76800; //270
+                            end else if(cnt[3]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[3]==2) begin //180
+                                pixel_addr = ( 320*(319-(h_cnt>>1)) + (240+(v_cnt>>1)) )%76800; //90
+                            end else if(cnt[3]==3) begin //270
+                                pixel_addr = ( 320*(79-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0100) begin
+                            cnt_next[4]=cnt[4]-1;
+                            if(cnt[4]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-0+80) + (79-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[4]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[4]==2) begin //180
+                                pixel_addr = ( 320*(79-(h_cnt>>1)+80) + ((v_cnt>>1)+0-80) )%76800; //90
+                            end else if(cnt[4]==3) begin //270
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0101) begin
+                            cnt_next[5]=cnt[5]-1;
+                            if(cnt[5]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[5]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[5]==2) begin //180
+                                pixel_addr = ( 320*(159-(h_cnt>>1)+80) + ((v_cnt>>1)+80-80) )%76800; //90
+                            end else if(cnt[5]==3) begin //270
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0110) begin
+                            cnt_next[6]=cnt[6]-1;
+                            if(cnt[6]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-160+80) + (239-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[6]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[6]==2) begin //180
+                                pixel_addr = ( 320*(239-(h_cnt>>1)+80) + (160+(v_cnt>>1)-80) )%76800; //90
+                            end else if(cnt[6]==3) begin //270
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b0111) begin
+                            cnt_next[7]=cnt[7]-1;
+                            if(cnt[7]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
+                            end else if(cnt[7]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[7]==2) begin //180
+                                pixel_addr = ( 320*(319-(h_cnt>>1)+80) + (240+(v_cnt>>1)-80) )%76800;  //90
+                            end else if(cnt[7]==3) begin //270
+                                pixel_addr = ( 320*(239-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1000) begin
+                            cnt_next[8]=cnt[8]-1;
+                            if(cnt[8]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-0+160) + (79-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[8]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[8]==2) begin //180
+                                pixel_addr = ( 320*(79-(h_cnt>>1)+160) + (0+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[8]==3) begin //270
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1001) begin
+                            cnt_next[9]=cnt[9]-1;
+                            if(cnt[9]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-80+160) + (159-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[9]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[9]==2) begin //180
+                                pixel_addr = ( 320*(159-(h_cnt>>1)+160) + (80+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[9]==3) begin //270
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1010) begin
+                            cnt_next[10]=cnt[10]-1;
+                            if(cnt[10]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-160+160) + (239-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[10]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[10]==2) begin //180
+                                pixel_addr = ( 320*(239-(h_cnt>>1)+160) + (160+(v_cnt>>1)-160) )%76800;  //90
+                            end else if(cnt[10]==3) begin //270
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end else if(key_num==4'b1011) begin
+                            cnt_next[11]=cnt[11]-1;
+                            if(cnt[11]==0) begin  //0
+                                pixel_addr = ( 320*((h_cnt>>1)-240+160) + (319-(v_cnt>>1)+160) )%76800; //270
+                            end else if(cnt[11]==1) begin //90
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
+                            end else if(cnt[11]==2) begin //180
+                                pixel_addr = ( 320*(319-(h_cnt>>1)+160) + (240+(v_cnt>>1)-160) )%76800; //90
+                            end else if(cnt[11]==3) begin //270
+                                pixel_addr = ( 320*(399-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
+                            end else begin
+                                pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        
 
-        if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
+        
+        if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin  //o, m=0, M=79
             if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
@@ -102,44 +426,8 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0000) begin  //o, m=0, M=79
-                                cnt_next[0]=cnt[0]+1;
-                                if(cnt[0]==0) begin  //0
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)) + (0+v_cnt>>1) )%76800; //90
-                                end else if(cnt[0]==1) begin //90
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[0]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-0) + (79-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[0]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0000) begin  //o, m=0, M=79
-                                cnt_next[0]=cnt[0]-1;
-                                if(cnt[0]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-0) + (79-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[0]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[0]==2) begin //180
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)) + (0+v_cnt>>1) )%76800; //90
-                                end else if(cnt[0]==3) begin //270
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
-        end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin   //p, m=80,  M=159
+        end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin   //p, m=80, M=159
             if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
@@ -153,42 +441,6 @@ module mem_addr_gen2(
                     pixel_addr = ( 320*((h_cnt>>1)-80) + (159-(v_cnt>>1)) )%76800; //270
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0001) begin
-                                cnt_next[1]=cnt[1]+1;
-                                if(cnt[1]==0) begin  //0
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)) + (80+(v_cnt>>1)) )%76800; //90
-                                end else if(cnt[1]==1) begin //90
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[1]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-80) + (159-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[1]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0001) begin
-                                cnt_next[1]=cnt[1]-1;
-                                if(cnt[1]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-80) + (159-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[1]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[1]==2) begin //180
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)) + (80+(v_cnt>>1)) )%76800; //90
-                                end else if(cnt[1]==3) begin //270
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
                 end
             end
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin  //[, m=160, M=239
@@ -206,44 +458,7 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0010) begin  //[, m=160, M=239
-                                cnt_next[2]=cnt[2]+1;
-                                if(cnt[2]==0) begin  //0
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)) + (160+(v_cnt>>1)) )%76800;    //90
-                                end else if(cnt[2]==1) begin //90
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[2]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-160) + (239-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[2]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0010) begin  //[, m=160, M=239
-                                cnt_next[2]=cnt[2]-1;
-                                if(cnt[2]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-160) + (239-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[2]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[2]==2) begin //180
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)) + (160+(v_cnt>>1)) )%76800;    //90
-                                end else if(cnt[2]==3) begin //270
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
-
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin  //], m=240, M=319
             if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
@@ -259,45 +474,9 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0011) begin  //[, m=160, M=239
-                                cnt_next[3]=cnt[3]+1;
-                                if(cnt[3]==0) begin  //0
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)) + (240+(v_cnt>>1)) )%76800; //90
-                                end else if(cnt[3]==1) begin //90
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[3]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-240) + (319-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[3]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0011) begin  //[, m=160, M=239
-                                cnt_next[3]=cnt[3]-1;
-                                if(cnt[3]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-240) + (319-(v_cnt>>1)) )%76800; //270
-                                end else if(cnt[3]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[3]==2) begin //180
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)) + (240+(v_cnt>>1)) )%76800; //90
-                                end else if(cnt[3]==3) begin //270
-                                    pixel_addr = ( 320*(79-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
         //2nd row
-        end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin   //k, m=0,   M=79
+        end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin   //k, m=0, M=79
             if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
@@ -312,44 +491,8 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0100) begin  //[, m=160, M=239
-                                cnt_next[4]=cnt[4]+1;
-                                if(cnt[4]==0) begin  //0
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)+80) + ((v_cnt>>1)+0-80) )%76800; //90
-                                end else if(cnt[4]==1) begin //90
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[4]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-0+80) + (79-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[4]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0100) begin  //[, m=160, M=239
-                                cnt_next[4]=cnt[4]-1;
-                                if(cnt[4]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-0+80) + (79-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[4]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[4]==2) begin //180
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)+80) + ((v_cnt>>1)+0-80) )%76800; //90
-                                end else if(cnt[4]==3) begin //270
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
-        end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin //l, m=80,  M=159
+        end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin //l, m=80, M=159
             if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
@@ -363,42 +506,6 @@ module mem_addr_gen2(
                     pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0101) begin  //[, m=160, M=239
-                                cnt_next[5]=cnt[5]+1;
-                                if(cnt[5]==0) begin  //0
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)+80) + ((v_cnt>>1)+80-80) )%76800; //90
-                                end else if(cnt[5]==1) begin //90
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[5]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[5]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0101) begin  //[, m=160, M=239
-                                cnt_next[5]=cnt[5]-1;
-                                if(cnt[5]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[5]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[5]==2) begin //180
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)+80) + ((v_cnt>>1)+80-80) )%76800; //90
-                                end else if(cnt[5]==3) begin //270
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
                 end
             end
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin    //;, m=160, M=239
@@ -416,42 +523,6 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0110) begin  //[, m=160, M=239
-                                cnt_next[6]=cnt[6]+1;
-                                if(cnt[6]==0) begin  //0
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)+80) + (160+(v_cnt>>1)-80) )%76800; //90
-                                end else if(cnt[6]==1) begin //90
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[6]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-160+80) + (239-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[6]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0110) begin  //[, m=160, M=239
-                                cnt_next[6]=cnt[6]-1;
-                                if(cnt[6]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-160+80) + (239-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[6]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[6]==2) begin //180
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)+80) + (160+(v_cnt>>1)-80) )%76800; //90
-                                end else if(cnt[6]==3) begin //270
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin    //', m=240, M=319
             if(hold || ispass) begin
@@ -467,42 +538,6 @@ module mem_addr_gen2(
                     pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b0111) begin  //[, m=160, M=239
-                                cnt_next[7]=cnt[7]+1;
-                                if(cnt[7]==0) begin  //0
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)+80) + (240+(v_cnt>>1)-80) )%76800;  //90
-                                end else if(cnt[7]==1) begin //90
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[7]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[7]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b0111) begin  //[, m=160, M=239
-                                cnt_next[7]=cnt[7]-1;
-                                if(cnt[7]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
-                                end else if(cnt[7]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[7]==2) begin //180
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)+80) + (240+(v_cnt>>1)-80) )%76800;  //90
-                                end else if(cnt[7]==3) begin //270
-                                    pixel_addr = ( 320*(239-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
                 end
             end
         //3rd row
@@ -521,42 +556,6 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b1000) begin  //[, m=160, M=239
-                                cnt_next[8]=cnt[8]+1;
-                                if(cnt[8]==0) begin  //0
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)+160) + (0+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[8]==1) begin //90
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[8]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-0+160) + (79-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[8]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b1000) begin  //[, m=160, M=239
-                                cnt_next[8]=cnt[8]-1;
-                                if(cnt[8]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-0+160) + (79-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[8]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[8]==2) begin //180
-                                    pixel_addr = ( 320*(79-(h_cnt>>1)+160) + (0+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[8]==3) begin //270
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin    //,, m=80,  M=159
             if(hold || ispass) begin
@@ -572,42 +571,6 @@ module mem_addr_gen2(
                     pixel_addr = ( 320*((h_cnt>>1)-80+160) + (159-(v_cnt>>1)+160) )%76800; //270
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b1001) begin  //[, m=160, M=239
-                                cnt_next[9]=cnt[9]+1;
-                                if(cnt[9]==0) begin  //0
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)+160) + (80+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[9]==1) begin //90
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[9]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-80+160) + (159-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[9]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b1001) begin  //[, m=160, M=239
-                                cnt_next[9]=cnt[9]-1;
-                                if(cnt[9]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-80+160) + (159-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[9]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[9]==2) begin //180
-                                    pixel_addr = ( 320*(159-(h_cnt>>1)+160) + (80+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[9]==3) begin //270
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
                 end
             end
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin   //., m=160, M=239
@@ -625,42 +588,6 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b1010) begin  //[, m=160, M=239
-                                cnt_next[10]=cnt[10]+1;
-                                if(cnt[10]==0) begin  //0
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)+160) + (160+(v_cnt>>1)-160) )%76800;  //90
-                                end else if(cnt[10]==1) begin //90
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[10]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-160+160) + (239-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[10]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b1010) begin  //[, m=160, M=239
-                                cnt_next[10]=cnt[10]-1;
-                                if(cnt[10]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-160+160) + (239-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[10]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[10]==2) begin //180
-                                    pixel_addr = ( 320*(239-(h_cnt>>1)+160) + (160+(v_cnt>>1)-160) )%76800;  //90
-                                end else if(cnt[10]==3) begin //270
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin   ///, m=240, M=319
             if(hold || ispass) begin
@@ -677,46 +604,11 @@ module mem_addr_gen2(
                 end else begin
                     pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
                 end
-
-                if(key_valid && key_down[last_change]) begin
-                    if(key_num!=4'b1111) begin
-                        if(!shift_down) begin
-                            if(key_num==4'b1011) begin  //[, m=160, M=239
-                                cnt_next[11]=cnt[11]+1;
-                                if(cnt[11]==0) begin  //0
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)+160) + (240+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[11]==1) begin //90
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else if(cnt[11]==2) begin //180
-                                    pixel_addr = ( 320*((h_cnt>>1)-240+160) + (319-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[11]==3) begin //270
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end else begin
-                            if(key_num==4'b1011) begin  //[, m=160, M=239
-                                cnt_next[11]=cnt[11]-1;
-                                if(cnt[11]==0) begin  //0
-                                    pixel_addr = ( 320*((h_cnt>>1)-240+160) + (319-(v_cnt>>1)+160) )%76800; //270
-                                end else if(cnt[11]==1) begin //90
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;    //0
-                                end else if(cnt[11]==2) begin //180
-                                    pixel_addr = ( 320*(319-(h_cnt>>1)+160) + (240+(v_cnt>>1)-160) )%76800; //90
-                                end else if(cnt[11]==3) begin //270
-                                    pixel_addr = ( 320*(399-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-                                end else begin
-                                    pixel_addr = ((h_cnt>>1)+320*(v_cnt>>1))%76800;
-                                end
-                            end
-                        end
-                    end
-                end
             end
         end else begin
             pixel_addr = ( (h_cnt>>1) + 320*(v_cnt>>1) )% 76800;  //640*480 --> 320*240 original
         end
+        
 
         if( cnt[0]==0 && cnt[1]==0 && cnt[2]==0 && cnt[3]==0 &&
             cnt[4]==0 && cnt[5]==0 && cnt[6]==0 && cnt[7]==0 &&
