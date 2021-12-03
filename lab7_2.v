@@ -21,7 +21,8 @@ module mem_addr_gen2(
     inout PS2_DATA,
     input [9:0] h_cnt,
     input [9:0] v_cnt,
-    output reg [16:0] pixel_addr
+    output reg [16:0] pixel_addr,
+    output reg ispass
 );
     parameter [8:0] LEFT_SHIFT_CODES  = 9'b0_0001_0010;
 	parameter [8:0] RIGHT_SHIFT_CODES = 9'b0_0101_1001;
@@ -62,15 +63,19 @@ module mem_addr_gen2(
     integer i;
     reg [1:0] cnt[0:11];
     reg [1:0] cnt_next[0:11];
+    reg ispass_next;
     always @(posedge clk,posedge rst) begin
         if(rst) begin
             cnt[0]<=1;cnt[1]<=1;cnt[2]<=1;cnt[3]<=1;
             cnt[4]<=3;cnt[5]<=3;cnt[6]<=3;cnt[7]<=3;
             cnt[8]<=2;cnt[9]<=2;cnt[10]<=2;cnt[11]<=2;
+
+            ispass<=0;
         end else begin
             for(i=0;i<12;i=i+1) begin
                 cnt[i]<=cnt_next[i];
             end
+            ispass<=ispass_next;
         end
     end
     
@@ -79,7 +84,8 @@ module mem_addr_gen2(
         if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin
             /*if(rst) begin
                 pixel_addr = ( 320*(79-(h_cnt>>1)) + (0+v_cnt>>1) )%76800; //90
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[0]=cnt[0];
@@ -134,7 +140,8 @@ module mem_addr_gen2(
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin   //p, m=80,  M=159
             /*if(rst) begin
                 pixel_addr = ( 320*(159-(h_cnt>>1)) + (80+(v_cnt>>1)) )%76800; //90
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[1]=cnt[1];
@@ -189,7 +196,8 @@ module mem_addr_gen2(
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin  //[, m=160, M=239
             /*if(rst) begin
                 pixel_addr = ( 320*(239-(h_cnt>>1)) + (160+(v_cnt>>1)) )%76800;    //90
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[2]=cnt[2];
@@ -245,7 +253,8 @@ module mem_addr_gen2(
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 0 <= v_cnt>>1 && v_cnt>>1 < 80) begin  //], m=240, M=319
             /*if(rst) begin
                 pixel_addr = ( 320*(319-(h_cnt>>1)) + (240+(v_cnt>>1)) )%76800; //90
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[3]=cnt[3];
@@ -301,7 +310,8 @@ module mem_addr_gen2(
         end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin   //k, m=0,   M=79
             /*if(rst) begin
                 pixel_addr = ( 320*((h_cnt>>1)-0+80) + (79-(v_cnt>>1)+80) )%76800; //270
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[4]=cnt[4];
@@ -356,7 +366,8 @@ module mem_addr_gen2(
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin //l, m=80,  M=159
             /*if(rst) begin
                 pixel_addr = ( 320*((h_cnt>>1)-80+80) + (159-(v_cnt>>1)+80) )%76800; //270
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[5]=cnt[5];
@@ -411,7 +422,8 @@ module mem_addr_gen2(
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin    //;, m=160, M=239
             /*if(rst) begin
                 pixel_addr = ( 320*((h_cnt>>1)-160+80) + (239-(v_cnt>>1)+80) )%76800; //270
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[6]=cnt[6];
@@ -466,7 +478,8 @@ module mem_addr_gen2(
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 80 <= v_cnt>>1 && v_cnt>>1 < 160) begin    //', m=240, M=319
             /*if(rst) begin
                 pixel_addr = ( 320*((h_cnt>>1)-240+80) + (319-(v_cnt>>1)+80) )%76800; //270
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[7]=cnt[7];
@@ -522,7 +535,8 @@ module mem_addr_gen2(
         end else if(0 <= h_cnt>>1 && h_cnt>>1 < 80 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin  //m, m=0,   M=79
             /*if(rst) begin
                 pixel_addr = ( 320*(399-(v_cnt>>1)) + (0+79-(h_cnt>>1)) )%76800; //180
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[8]=cnt[8];
@@ -577,7 +591,8 @@ module mem_addr_gen2(
         end else if(80 <= h_cnt>>1 && h_cnt>>1 < 160 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin    //,, m=80,  M=159
             /*if(rst) begin
                 pixel_addr = ( 320*(399-(v_cnt>>1)) + (80+159-(h_cnt>>1)) )%76800; //180
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[9]=cnt[9];
@@ -632,7 +647,8 @@ module mem_addr_gen2(
         end else if(160 <= h_cnt>>1 && h_cnt>>1 < 240 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin   //., m=160, M=239
             /*if(rst) begin
                 pixel_addr = ( 320*(399-(v_cnt>>1)) + (160+239-(h_cnt>>1)) )%76800; //180
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[10]=cnt[10];
@@ -687,7 +703,8 @@ module mem_addr_gen2(
         end else if(240 <= h_cnt>>1 && h_cnt>>1 < 320 && 160 <= v_cnt>>1 && v_cnt>>1 < 240) begin   ///, m=240, M=319
             /*if(rst) begin
                 pixel_addr = ( 320*(399-(v_cnt>>1)) + (240+319-(h_cnt>>1)) )%76800; //180
-            end else */if(hold) begin
+            end else */
+            if(hold || ispass) begin
                 pixel_addr = ( (h_cnt>>1)+320*(v_cnt>>1) )%76800;
             end else begin
                 cnt_next[11]=cnt[11];
@@ -741,6 +758,14 @@ module mem_addr_gen2(
             end
         end else begin
             pixel_addr = ( (h_cnt>>1) + 320*(v_cnt>>1) )% 76800;  //640*480 --> 320*240 original
+        end
+
+        if( cnt[0]==0 && cnt[1]==0 && cnt[2]==0 && cnt[3]==0 &&
+            cnt[4]==0 && cnt[5]==0 && cnt[6]==0 && cnt[7]==0 &&
+            cnt[8]==0 && cnt[9]==0 && cnt[10]==0 && cnt[11]==0) begin
+            ispass_next=1;
+        end else begin
+            ispass_next=0;
         end
     end
     always @ (*) begin
@@ -799,7 +824,8 @@ module lab7_2(
         .PS2_DATA(PS2_DATA),
         .h_cnt(h_cnt),
         .v_cnt(v_cnt),
-        .pixel_addr(pixel_addr)
+        .pixel_addr(pixel_addr),
+        .ispass(pass)
     );
     
     blk_mem_gen_0 blk_mem_gen_0_inst(
