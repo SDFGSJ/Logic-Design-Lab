@@ -14,7 +14,37 @@
 `define hb  32'd988
 `define sil   32'd50000000
 `define silence   32'd50000000
+//remember to remove
+module debounce(
+    input clk,
+    input pb,
+    output pb_debounced
+);
+    reg [3:0] shift_reg;
 
+    always @(posedge clk) begin
+        shift_reg[3:1] <= shift_reg[2:0];
+        shift_reg[0] <= pb;
+    end
+
+    assign pb_debounced = (shift_reg==4'b1111) ? 1'b1 : 1'b0;
+endmodule
+module onepulse(
+    input clk,
+    input pb_debounced,
+    output reg pb_1pulse
+);
+    reg pb_debounced_delay;
+
+    always @(posedge clk) begin
+        if(pb_debounced==1'b1 && pb_debounced_delay==1'b0) begin
+            pb_1pulse <= 1'b1;
+        end else begin
+            pb_1pulse <= 1'b0;
+        end
+        pb_debounced_delay <= pb_debounced;
+    end
+endmodule
 module lab8(
     clk,        // clock from crystal
     rst,        // BTNC: active high reset
@@ -45,7 +75,7 @@ module lab8(
     input _volUP, _volDOWN, _higherOCT, _lowerOCT; 
     inout PS2_DATA; 
 	inout PS2_CLK; 
-    output [15:0] _led; 
+    output reg [15:0] _led; 
     output audio_mclk; 
     output audio_lrck; 
     output audio_sck; 
@@ -54,8 +84,8 @@ module lab8(
     output reg [3:0] DIGIT; 
     
     // Modify these
-    assign _led = 16'b1110_0000_0001_1111;
-    /*assign DIGIT = 4'b0000;
+    /*assign _led = 16'b1110_0000_0001_1111;
+    assign DIGIT = 4'b0000;
     assign DISPLAY = 7'b0111111;*/
 
     // Internal Signal
@@ -69,6 +99,108 @@ module lab8(
     wire clkDiv22, display_clk;
     clock_divider #(.n(22)) clock_22(.clk(clk), .clk_div(clkDiv22));    // for keyboard and audio
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
+
+    reg [2:0] volume=3'd3, volume_next;
+    reg [2:0] octave=3'd2, octave_next;
+    reg [15:0] _led_next;
+    wire _volUP_debounced, _volDOWN_debounced, _higherOCT_debounced, _lowerOCT_debounced;
+    wire _volUP_1p, _volDOWN_1p, _higherOCT_1p, _lowerOCT_1p;
+    debounce vol_up_de(    .clk(clk), .pb(_volUP),     .pb_debounced(_volUP_debounced));
+    debounce vol_down_de(  .clk(clk), .pb(_volDOWN),   .pb_debounced(_volDOWN_debounced));
+    debounce oct_up_de(    .clk(clk), .pb(_higherOCT), .pb_debounced(_higherOCT_debounced));
+    debounce oct_down_de(  .clk(clk), .pb(_lowerOCT),  .pb_debounced(_lowerOCT_debounced));
+
+    onepulse vol_up_op(     .clk(clk), .pb_debounced(_volUP_debounced),       .pb_1pulse(_volUP_1p));
+    onepulse vol_down_op(   .clk(clk), .pb_debounced(_volDOWN_debounced),     .pb_1pulse(_volDOWN_1p));
+    onepulse oct_up_op(     .clk(clk), .pb_debounced(_higherOCT_debounced),   .pb_1pulse(_higherOCT_1p));
+    onepulse oct_down_op(   .clk(clk), .pb_debounced(_lowerOCT_debounced),    .pb_1pulse(_lowerOCT_1p));
+
+    always @(posedge clk,posedge rst) begin
+        if(rst) begin
+            volume<=3'd3;
+            octave<=3'd2;
+        end else begin
+            volume<=volume_next;
+            octave<=octave_next;
+        end
+    end
+
+    //adjust volume,octave
+    always @(*) begin
+        volume_next=volume;
+        octave_next=octave;
+        if(_volUP_1p) begin
+            if(volume==5) begin
+                volume_next=5;
+            end else begin
+                volume_next=volume+1;
+            end
+        end
+
+        if(_volDOWN_1p) begin
+            if(volume==1) begin
+                volume_next=1;
+            end else begin
+                volume_next=volume-1;
+            end
+        end
+
+        if(_higherOCT_1p) begin
+            if(octave==3) begin
+                octave_next=3;
+            end else begin
+                octave_next=octave+1;
+            end
+        end
+
+        if(_lowerOCT_1p) begin
+            if(octave==1) begin
+                octave_next=1;
+            end else begin
+                octave_next=octave-1;
+            end
+        end
+    end
+
+    always @(posedge clk,posedge rst) begin
+        if(rst) begin
+            _led <= 16'b0100_0000_0000_0111;
+        end else begin
+            _led <= _led_next;
+        end
+    end
+
+    //volume led
+    always @(*) begin
+        _led_next = _led;
+        if(_mute) begin
+            _led_next[4:0] = 5'b00000;
+        end else begin
+            if(volume==1) begin
+                _led_next[4:0] = 5'b00001;
+            end else if(volume==2) begin
+                _led_next[4:0] = 5'b00011;
+            end else if(volume==3) begin
+                _led_next[4:0] = 5'b00111;
+            end else if(volume==4) begin
+                _led_next[4:0] = 5'b01111;
+            end else if(volume==5) begin
+                _led_next[4:0] = 5'b11111;
+            end else begin
+                _led_next[4:0] = 5'b00000;
+            end
+
+            if(octave==1) begin
+                _led_next[15:13] = 3'b100;
+            end else if(octave==2) begin
+                _led_next[15:13] = 3'b010;
+            end else if(octave==3) begin
+                _led_next[15:13] = 3'b001;
+            end else begin
+                _led_next[15:13] = 3'b000;
+            end
+        end
+    end
 
     // Player Control
     // [in]  reset, clock, _play, _slow, _music, and _mode
@@ -129,10 +261,12 @@ module lab8(
             end
             4'b1101: begin
                 value=7;
+                //value=octave;
                 DIGIT=4'b1011;
             end
             4'b1011: begin
                 value=7;
+                //value=volume;
                 DIGIT=4'b0111;
             end
             4'b0111: begin

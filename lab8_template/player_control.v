@@ -18,7 +18,7 @@ module player_control (
 	end
 
     always @* begin
-        next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;//LEN-1;
+        next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;
     end
 
 endmodule
