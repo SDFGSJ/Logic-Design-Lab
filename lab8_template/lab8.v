@@ -93,7 +93,7 @@ module lab8(
 
     wire [11:0] ibeatNum;               // Beat counter
     wire [31:0] freqL, freqR;           // Raw frequency, produced by music module
-    wire [21:0] freq_outL, freq_outR;    // Processed frequency, adapted to the clock rate of Basys3
+    reg [21:0] freq_outL, freq_outR;    // Processed frequency, adapted to the clock rate of Basys3
 
     // clkDiv22
     wire clkDiv22, display_clk;
@@ -226,9 +226,31 @@ module lab8(
 
     // freq_outL, freq_outR
     // Note gen makes no sound, if freq_out = 50000000 / `silence = 1
-    assign freq_outL = 50000000 / freqL;
-    assign freq_outR = 50000000 / freqR;
+    /*assign freq_outL = 50000000 / freqL;
+    assign freq_outR = 50000000 / freqR;*/
+    always @(*) begin
+        if(octave==1) begin
+            freq_outL = 50000000 / (_mute ? `silence : freqL/2);
+        end else if(octave==2) begin
+            freq_outL = 50000000 / (_mute ? `silence : freqL);
+        end else if(octave==3) begin
+            freq_outL = 50000000 / (_mute ? `silence : freqL*2);
+        end
+    end
+    always @(*) begin
+        if(octave==1) begin
+            freq_outR = 50000000 / (_mute ? `silence : freqR/2);
+        end else if(octave==2) begin
+            freq_outR = 50000000 / (_mute ? `silence : freqR);
+        end else if(octave==3) begin
+            freq_outR = 50000000 / (_mute ? `silence : freqR*2);
+        end
+    end
 
+
+
+
+    //7-segment control
     reg [3:0] num;
     always @(*) begin
         if(freqR == `a || freqR == `ha)
@@ -251,7 +273,6 @@ module lab8(
             num = 4'd7;
     end
 
-    //7-segment control
     reg [3:0] value;
     always @(posedge display_clk) begin
         case(DIGIT)
@@ -302,7 +323,7 @@ module lab8(
     note_gen noteGen_00(
         .clk(clk), 
         .rst(rst), 
-        .volume(3'b000),
+        .volume(volume),
         .note_div_left(freq_outL), 
         .note_div_right(freq_outR), 
         .audio_left(audio_in_left),     // left sound audio

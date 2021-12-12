@@ -13,7 +13,7 @@ module note_gen(
     input rst; // active low reset
     input [2:0] volume;
     input [21:0] note_div_left, note_div_right; // div for note generation
-    output [15:0] audio_left, audio_right;
+    output reg [15:0] audio_left, audio_right;
 
     // Declare internal signals
     reg [21:0] clk_cnt_next, clk_cnt;
@@ -67,8 +67,48 @@ module note_gen(
 
     // Assign the amplitude of the note
     // Volume is controlled here
-    assign audio_left = (note_div_left == 22'd1) ? 16'h0000 : 
+    /*assign audio_left = (note_div_left == 22'd1) ? 16'h0000 : 
                                 (b_clk == 1'b0) ? 16'hE000 : 16'h2000;
     assign audio_right = (note_div_right == 22'd1) ? 16'h0000 : 
-                                (c_clk == 1'b0) ? 16'hE000 : 16'h2000;
+                                (c_clk == 1'b0) ? 16'hE000 : 16'h2000;*/
+
+    always @(*) begin
+        if(note_div_left == 22'd1) begin
+            audio_left = 16'h0000;
+        end else begin
+            if(volume==1) begin
+                audio_left = (b_clk == 1'b0) ? 16'hF000 : 16'h1000;
+            end else if(volume==2) begin
+                audio_left = (b_clk == 1'b0) ? 16'hE000 : 16'h2000;
+            end else if(volume==3) begin
+                audio_left = (b_clk == 1'b0) ? 16'hC000 : 16'h4000;
+            end else if(volume==4) begin
+                audio_left = (b_clk == 1'b0) ? 16'hB000 : 16'h5000;
+            end else if(volume==5) begin
+                audio_left = (b_clk == 1'b0) ? 16'hA000 : 16'h6000;
+            end else begin
+                audio_left = 16'h0000;
+            end
+        end
+    end
+
+    always @(*) begin
+        if(note_div_right == 22'd1) begin
+            audio_right = 16'h0000;
+        end else begin
+            if(volume==1) begin
+                audio_right = (c_clk == 1'b0) ? 16'hF000 : 16'h1000;
+            end else if(volume==2) begin
+                audio_right = (c_clk == 1'b0) ? 16'hE000 : 16'h2000;
+            end else if(volume==3) begin
+                audio_right = (c_clk == 1'b0) ? 16'hC000 : 16'h4000;
+            end else if(volume==4) begin
+                audio_right = (c_clk == 1'b0) ? 16'hB000 : 16'h5000;
+            end else if(volume==5) begin
+                audio_right = (c_clk == 1'b0) ? 16'hA000 : 16'h6000;
+            end else begin
+                audio_right = 16'h0000;
+            end
+        end
+    end
 endmodule
