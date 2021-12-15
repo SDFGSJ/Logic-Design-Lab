@@ -1,11 +1,3 @@
-/*`define c   32'd262   // C3
-`define g   32'd392   // G3
-`define b   32'd494   // B3
-`define hc  32'd524   // C4
-`define hd  32'd588   // D4
-`define he  32'd660   // E4
-`define hf  32'd698   // F4
-`define hg  32'd784   // G4*/
 `define c   32'd262   // C3
 `define d   32'd294
 `define e   32'd330
@@ -13,10 +5,10 @@
 `define g   32'd392   // G3
 `define a   32'd440
 `define b   32'd494   // B3
-`define hc  32'd524   // C4 524
-`define hd  32'd588   // D4 588
-`define he  32'd660   // E4 660
-`define hf  32'd698   // F4 698
+`define hc  32'd524   // C4
+`define hd  32'd588   // D4
+`define he  32'd660   // E4
+`define hf  32'd698   // F4
 `define hg  32'd784   // G4
 `define ha  32'd880
 `define hb  32'd988

@@ -14,21 +14,7 @@
 `define hb  32'd988
 `define sil   32'd50000000
 `define silence   32'd50000000
-///////////////////////////////////////////////////////////////remember to remove
-module debounce(
-    input clk,
-    input pb,
-    output pb_debounced
-);
-    reg [3:0] shift_reg;
 
-    always @(posedge clk) begin
-        shift_reg[3:1] <= shift_reg[2:0];
-        shift_reg[0] <= pb;
-    end
-
-    assign pb_debounced = (shift_reg==4'b1111) ? 1'b1 : 1'b0;
-endmodule
 module lab8(
     clk,        // clock from crystal
     rst,        // BTNC: active high reset
@@ -155,7 +141,7 @@ module lab8(
         end
     end
 
-    //volume led
+    //led
     always @(*) begin
         _led_next = _led;
         if(_mute) begin
@@ -251,7 +237,7 @@ module lab8(
 
 
 
-    //7-segment control
+    //7-segment control, freqR = main melody
     reg [3:0] num;
     always @(*) begin
         if(!_mode || (_mode && _play)) begin   //user play mode || (demonstrate && play)
@@ -316,9 +302,6 @@ module lab8(
             default: DISPLAY=7'b1111111;
         endcase
     end
-
-
-
 
     // Note generation
     // [in]  processed frequency
