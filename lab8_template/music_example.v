@@ -24,14 +24,54 @@
 `define sil   32'd50000000 // slience
 
 module music_example (
+    input clk,
+    input rst,
 	input [11:0] ibeatNum,
 	input en,
 	output reg [31:0] toneL,
-    output reg [31:0] toneR
+    output reg [31:0] toneR,
+    inout PS2_DATA,
+	inout PS2_CLK
 );
+    parameter [8:0] KEY_CODES[0:6]={
+        9'b0_0001_1100, //A:1C
+        9'b0_0001_1011, //S:1B
+        9'b0_0010_0011, //D:23
+        9'b0_0010_1011, //F:2B
+        9'b0_0011_0100, //G:34
+        9'b0_0011_0011, //H:33
+        9'b0_0011_1011  //J:3B
+    };
 
+    wire [511:0] key_down;
+    wire [8:0] last_change;
+    wire key_valid;
+    reg [2:0] key_num;
+
+    KeyboardDecoder keydecode(
+        .key_down(key_down),
+        .last_change(last_change),
+        .key_valid(key_valid),
+        .PS2_DATA(PS2_DATA),
+        .PS2_CLK(PS2_CLK),
+        .rst(rst),
+        .clk(clk)
+    );
+
+    always @ (*) begin
+        case (last_change)
+            KEY_CODES[0] : key_num = 3'b000;
+            KEY_CODES[1] : key_num = 3'b001;
+            KEY_CODES[2] : key_num = 3'b010;
+            KEY_CODES[3] : key_num = 3'b011;
+            KEY_CODES[4] : key_num = 3'b100;
+            KEY_CODES[5] : key_num = 3'b101;
+            KEY_CODES[6] : key_num = 3'b110;
+            default : key_num = 3'b111;
+        endcase
+    end
     always @* begin
-        if(en == 1) begin
+        if(en == 1) begin   //demonstrate mode
             case(ibeatNum)
                 // --- Measure 1 ---
                 12'd0: toneR = `hg;      12'd1: toneR = `hg; // HG (half-beat)
@@ -327,13 +367,36 @@ module music_example (
                 12'd510: toneR = `hc;   12'd511: toneR = `hc;
                 default: toneR = `sil;
             endcase
-        end else begin
-            toneR = `sil;
+        end else begin  //user play mode
+            //toneR = `sil;
+            if(key_down[last_change]) begin
+                if(key_num!=3'b111) begin
+                    if(key_num==3'b000) begin
+                        toneR = `c;
+                    end else if(key_num==3'b001) begin
+                        toneR = `d;
+                    end else if(key_num==3'b010) begin
+                        toneR = `e;
+                    end else if(key_num==3'b011) begin
+                        toneR = `f;
+                    end else if(key_num==3'b100) begin
+                        toneR = `g;
+                    end else if(key_num==3'b101) begin
+                        toneR = `a;
+                    end else if(key_num==3'b110) begin
+                        toneR = `b;
+                    end else begin
+                        toneR = `sil;
+                    end
+                end
+            end else begin
+                toneR = `sil;
+            end
         end
     end
 
     always @(*) begin
-        if(en == 1)begin
+        if(en == 1)begin    //demonstrate mode
             case(ibeatNum)
                 //1st section
                 12'd0: toneL = `hc;  	12'd1: toneL = `hc; // HC (two-beat)
@@ -640,8 +703,31 @@ module music_example (
                 default : toneL = `sil;
             endcase
         end
-        else begin
-            toneL = `sil;
+        else begin  //user play mode
+            //toneL = `sil;
+            if(key_down[last_change]) begin
+                if(key_num!=3'b111) begin
+                    if(key_num==3'b000) begin
+                        toneL = `c;
+                    end else if(key_num==3'b001) begin
+                        toneL = `d;
+                    end else if(key_num==3'b010) begin
+                        toneL = `e;
+                    end else if(key_num==3'b011) begin
+                        toneL = `f;
+                    end else if(key_num==3'b100) begin
+                        toneL = `g;
+                    end else if(key_num==3'b101) begin
+                        toneL = `a;
+                    end else if(key_num==3'b110) begin
+                        toneL = `b;
+                    end else begin
+                        toneL = `sil;
+                    end
+                end
+            end else begin
+                toneL = `sil;
+            end
         end
     end
 endmodule

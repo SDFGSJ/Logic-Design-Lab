@@ -5,16 +5,16 @@
 `define g   32'd392   // G3
 `define a   32'd440
 `define b   32'd494   // B3
-`define hc  32'd524   // C4 524
-`define hd  32'd588   // D4 588
-`define he  32'd660   // E4 660
-`define hf  32'd698   // F4 698
+`define hc  32'd524   // C4
+`define hd  32'd588   // D4
+`define he  32'd660   // E4
+`define hf  32'd698   // F4
 `define hg  32'd784   // G4
 `define ha  32'd880
 `define hb  32'd988
 `define sil   32'd50000000
 `define silence   32'd50000000
-//remember to remove
+///////////////////////////////////////////////////////////////remember to remove
 module debounce(
     input clk,
     input pb,
@@ -28,22 +28,6 @@ module debounce(
     end
 
     assign pb_debounced = (shift_reg==4'b1111) ? 1'b1 : 1'b0;
-endmodule
-module onepulse(
-    input clk,
-    input pb_debounced,
-    output reg pb_1pulse
-);
-    reg pb_debounced_delay;
-
-    always @(posedge clk) begin
-        if(pb_debounced==1'b1 && pb_debounced_delay==1'b0) begin
-            pb_1pulse <= 1'b1;
-        end else begin
-            pb_1pulse <= 1'b0;
-        end
-        pb_debounced_delay <= pb_debounced;
-    end
 endmodule
 module lab8(
     clk,        // clock from crystal
@@ -96,8 +80,9 @@ module lab8(
     reg [21:0] freq_outL, freq_outR;    // Processed frequency, adapted to the clock rate of Basys3
 
     // clkDiv22
-    wire clkDiv22, display_clk;
+    wire clkDiv22, clkDiv23, display_clk, myclk;
     clock_divider #(.n(22)) clock_22(.clk(clk), .clk_div(clkDiv22));    // for keyboard and audio
+    clock_divider #(.n(23)) clock_23(.clk(clk), .clk_div(clkDiv23));    // for keyboard and audio
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
 
     reg [2:0] volume=3'd3, volume_next;
@@ -110,10 +95,10 @@ module lab8(
     debounce oct_up_de(    .clk(clk), .pb(_higherOCT), .pb_debounced(_higherOCT_debounced));
     debounce oct_down_de(  .clk(clk), .pb(_lowerOCT),  .pb_debounced(_lowerOCT_debounced));
 
-    onepulse vol_up_op(     .clk(clk), .pb_debounced(_volUP_debounced),       .pb_1pulse(_volUP_1p));
-    onepulse vol_down_op(   .clk(clk), .pb_debounced(_volDOWN_debounced),     .pb_1pulse(_volDOWN_1p));
-    onepulse oct_up_op(     .clk(clk), .pb_debounced(_higherOCT_debounced),   .pb_1pulse(_higherOCT_1p));
-    onepulse oct_down_op(   .clk(clk), .pb_debounced(_lowerOCT_debounced),    .pb_1pulse(_lowerOCT_1p));
+    onepulse vol_up_op(     .clk(clk), .signal(_volUP_debounced),       .op(_volUP_1p));
+    onepulse vol_down_op(   .clk(clk), .signal(_volDOWN_debounced),     .op(_volDOWN_1p));
+    onepulse oct_up_op(     .clk(clk), .signal(_higherOCT_debounced),   .op(_higherOCT_1p));
+    onepulse oct_down_op(   .clk(clk), .signal(_lowerOCT_debounced),    .op(_lowerOCT_1p));
 
     always @(posedge clk,posedge rst) begin
         if(rst) begin
@@ -205,12 +190,13 @@ module lab8(
     // Player Control
     // [in]  reset, clock, _play, _slow, _music, and _mode
     // [out] beat number
-    player_control #(.LEN(512)) playerCtrl_00 ( 
-        .clk(clkDiv22),
+    assign myclk = (_slow)? clkDiv23 : clkDiv22;
+    player_control #(.LEN(512)) playerCtrl_00 (
+        .clk(myclk),
         .reset(rst),
-        ._play(1'b1),
-        ._slow(1'b0), 
-        ._mode(1'b0),
+        ._play(_play),
+        ._slow(_slow),
+        ._mode(_mode),
         .ibeat(ibeatNum)
     );
 
@@ -218,10 +204,14 @@ module lab8(
     // [in]  beat number and en
     // [out] left & right raw frequency
     music_example music_00 (
+        .clk(clk),
+        .rst(rst),
         .ibeatNum(ibeatNum),
-        .en(1'b1),
+        .en(_mode),
         .toneL(freqL),
-        .toneR(freqR)
+        .toneR(freqR),
+        .PS2_CLK(PS2_CLK),
+        .PS2_DATA(PS2_DATA)
     );
 
     // freq_outL, freq_outR
@@ -229,21 +219,32 @@ module lab8(
     /*assign freq_outL = 50000000 / freqL;
     assign freq_outR = 50000000 / freqR;*/
     always @(*) begin
-        if(octave==1) begin
-            freq_outL = 50000000 / (_mute ? `silence : freqL/2);
-        end else if(octave==2) begin
+        if(!_mode || (_mode && _play)) begin //user play mode || (demonstrate && play)
             freq_outL = 50000000 / (_mute ? `silence : freqL);
-        end else if(octave==3) begin
-            freq_outL = 50000000 / (_mute ? `silence : freqL*2);
+            if(octave==1) begin
+                freq_outL = 50000000 / (_mute ? `silence : freqL/2);
+            end else if(octave==2) begin
+                freq_outL = 50000000 / (_mute ? `silence : freqL);
+            end else if(octave==3) begin
+                freq_outL = 50000000 / (_mute ? `silence : freqL*2);
+            end
+        end else begin
+            freq_outL = 50000000 / `silence;
         end
     end
+
     always @(*) begin
-        if(octave==1) begin
-            freq_outR = 50000000 / (_mute ? `silence : freqR/2);
-        end else if(octave==2) begin
+        if(!_mode || (_mode && _play)) begin    //user play mode || (demonstrate && play)
             freq_outR = 50000000 / (_mute ? `silence : freqR);
-        end else if(octave==3) begin
-            freq_outR = 50000000 / (_mute ? `silence : freqR*2);
+            if(octave==1) begin
+                freq_outR = 50000000 / (_mute ? `silence : freqR/2);
+            end else if(octave==2) begin
+                freq_outR = 50000000 / (_mute ? `silence : freqR);
+            end else if(octave==3) begin
+                freq_outR = 50000000 / (_mute ? `silence : freqR*2);
+            end
+        end else begin
+            freq_outR = 50000000 / `silence;
         end
     end
 
@@ -253,24 +254,28 @@ module lab8(
     //7-segment control
     reg [3:0] num;
     always @(*) begin
-        if(freqR == `a || freqR == `ha)
-            num = 4'd5;
-        else if(freqR == `b || freqR == `hb)
-            num = 4'd6;
-        else if(freqR == `c || freqR == `hc)
-            num = 4'd0;
-        else if(freqR == `d || freqR == `hd)
-            num = 4'd1;
-        else if(freqR == `e || freqR == `he)
-            num = 4'd2;
-        else if(freqR == `f || freqR == `hf)
-            num = 4'd3;
-        else if(freqR == `g || freqR == `hg)
-            num = 4'd4;
-        else if(`sil)
+        if(!_mode || (_mode && _play)) begin   //user play mode || (demonstrate && play)
+            if(freqR == `a || freqR == `ha)
+                num = 4'd5;
+            else if(freqR == `b || freqR == `hb)
+                num = 4'd6;
+            else if(freqR == `c || freqR == `hc)
+                num = 4'd0;
+            else if(freqR == `d || freqR == `hd)
+                num = 4'd1;
+            else if(freqR == `e || freqR == `he)
+                num = 4'd2;
+            else if(freqR == `f || freqR == `hf)
+                num = 4'd3;
+            else if(freqR == `g || freqR == `hg)
+                num = 4'd4;
+            else if(`sil)
+                num = 4'd7;
+            else
+                num = 4'd7;
+        end else begin
             num = 4'd7;
-        else
-            num = 4'd7;
+        end
     end
 
     reg [3:0] value;
@@ -282,12 +287,10 @@ module lab8(
             end
             4'b1101: begin
                 value=7;
-                //value=octave;
                 DIGIT=4'b1011;
             end
             4'b1011: begin
                 value=7;
-                //value=volume;
                 DIGIT=4'b0111;
             end
             4'b0111: begin

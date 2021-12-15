@@ -18,7 +18,12 @@ module player_control (
 	end
 
     always @* begin
-        next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;
+		next_ibeat=ibeat;
+		if(!_play || !_mode) begin	//pause || user play mode
+			next_ibeat = ibeat;
+		end else begin
+			next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;
+		end
     end
 
 endmodule
