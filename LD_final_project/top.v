@@ -17,45 +17,24 @@
 
 
 module top(
-    clk,        // clock from crystal
-    rst,        // BTNC: active high reset
-    play,      // SW0: Play/Pause
-    mute,      // SW1: Mute
-    slow,      // SW2: Slow
-    mode,      // SW15: Mode
-    volUP,     // BTNU: Vol up
-    volDOWN,   // BTND: Vol down
-    higherOCT, // BTNR: Oct higher
-    lowerOCT,  // BTNL: Oct lower
-    PS2_DATA,   // Keyboard I/O
-    PS2_CLK,    // Keyboard I/O
-    led,       // LED: [15:13] octave & [4:0] volume
-    audio_mclk, // master clock
-    audio_lrck, // left-right clock
-    audio_sck,  // serial clock
-    audio_sdin, // serial audio data input
-    DISPLAY,    // 7-seg
-    DIGIT       // 7-seg
+    input clk,
+    input rst,      // BTNC
+    input play,     // BTNU: play/pause
+    input speedup,  // BTNR
+    input speeddown,// BTNL
+    inout PS2_DATA,
+    inout PS2_CLK,
+    output [15:0] sw,
+    output [15:0] led,
+    output audio_mclk, // master clock
+    output audio_lrck, // left-right clock
+    output audio_sck,  // serial clock
+    output audio_sdin, // serial audio data input
+    output reg [6:0] DISPLAY,
+    output reg [3:0] DIGIT
 );
-
-    // I/O declaration
-    input clk; 
-    input rst; 
-    input play, mute, slow, mode; 
-    input volUP, volDOWN, higherOCT, lowerOCT; 
-    inout PS2_DATA; 
-	inout PS2_CLK; 
-    output [15:0] led; 
-    output audio_mclk; 
-    output audio_lrck; 
-    output audio_sck; 
-    output audio_sdin; 
-    output reg [6:0] DISPLAY; 
-    output reg [3:0] DIGIT;
-
     // Internal Signal
     wire [15:0] audio_in_left, audio_in_right;
-
     wire [11:0] ibeatNum;               // Beat counter
     wire [31:0] freqL, freqR;           // Raw frequency, produced by music module
     reg [21:0] freq_outL, freq_outR;    // Processed frequency, adapted to the clock rate of Basys3
@@ -75,83 +54,31 @@ module top(
     reg [2:0] volume=3'd3, volume_next;
     reg [2:0] octave=3'd2, octave_next;
     
-    wire volUP_debounced, volDOWN_debounced, higherOCT_debounced, lowerOCT_debounced;
-    wire volUP_1p, volDOWN_1p, higherOCT_1p, lowerOCT_1p;
-    debounce vol_up_de(    .clk(clk), .pb(volUP),     .pb_debounced(volUP_debounced));
-    debounce vol_down_de(  .clk(clk), .pb(volDOWN),   .pb_debounced(volDOWN_debounced));
-    debounce oct_up_de(    .clk(clk), .pb(higherOCT), .pb_debounced(higherOCT_debounced));
-    debounce oct_down_de(  .clk(clk), .pb(lowerOCT),  .pb_debounced(lowerOCT_debounced));
+    wire speedup_debounced, speeddown_debounced;
+    wire speedup_1p, speeddown_1p;
+    debounce speed_up_de(   .clk(clk), .pb(speedup),    .pb_debounced(speedup_debounced));
+    debounce speed_down_de( .clk(clk), .pb(speeddown),  .pb_debounced(speeddown_debounced));
 
-    onepulse vol_up_op(     .clk(clk), .signal(volUP_debounced),       .op(volUP_1p));
-    onepulse vol_down_op(   .clk(clk), .signal(volDOWN_debounced),     .op(volDOWN_1p));
-    onepulse oct_up_op(     .clk(clk), .signal(higherOCT_debounced),   .op(higherOCT_1p));
-    onepulse oct_down_op(   .clk(clk), .signal(lowerOCT_debounced),    .op(lowerOCT_1p));
+    onepulse speed_up_op(   .clk(clk), .signal(speedup_debounced),   .op(speedup_1p));
+    onepulse speed_down_op( .clk(clk), .signal(speeddown_debounced), .op(speeddown_1p));
 
-    always @(posedge clk,posedge rst) begin
-        if(rst) begin
-            volume<=3'd3;
-            octave<=3'd2;
-        end else begin
-            volume<=volume_next;
-            octave<=octave_next;
-        end
-    end
-
-    //adjust volume,octave
-    always @(*) begin
-        volume_next=volume;
-        octave_next=octave;
-        if(volUP_1p) begin
-            if(volume==5) begin
-                volume_next=5;
-            end else begin
-                volume_next=volume+1;
-            end
-        end
-
-        if(volDOWN_1p) begin
-            if(volume==1) begin
-                volume_next=1;
-            end else begin
-                volume_next=volume-1;
-            end
-        end
-
-        if(higherOCT_1p) begin
-            if(octave==3) begin
-                octave_next=3;
-            end else begin
-                octave_next=octave+1;
-            end
-        end
-
-        if(lowerOCT_1p) begin
-            if(octave==1) begin
-                octave_next=1;
-            end else begin
-                octave_next=octave-1;
-            end
-        end
-    end
 
     led_controller lc(
-        .clkdiv(led_clk),
+        .clkdiv(clkDiv24),
         .rst(rst),
         .led(led)
     );
     
-    assign led_clk = (slow)? clkDiv25 : clkDiv24;
-    assign play_speed = (slow)? clkDiv23 : clkDiv22;
+    /*assign led_clk = (slow)? clkDiv25 : clkDiv24;
+    assign play_speed = (slow)? clkDiv23 : clkDiv22;*/
 
     // Player Control
-    // [in]  reset, clock, play, slow, _music, and mode
+    // [in]  reset, clock, mode
     // [out] beat number
     player_control #(.LEN(64)) playerCtrl_00 (
-        .clk(play_speed),
+        .clk(clkDiv22),
         .reset(rst),
-        .play(play),
-        .slow(slow),
-        .mode(mode),
+        .mode(1),
         .ibeat(ibeatNum)
     );
 
@@ -162,7 +89,7 @@ module top(
         .clk(clk),
         .rst(rst),
         .ibeatNum(ibeatNum),
-        .en(mode),
+        .en(1),
         .toneL(freqL),
         .toneR(freqR),
         .PS2_CLK(PS2_CLK),
@@ -172,64 +99,27 @@ module top(
     // freq_outL, freq_outR
     // Note gen makes no sound, if freq_out = 50000000 / `silence = 1
     always @(*) begin
-        if(!mode || (mode && play)) begin //user play mode || (demonstrate && play)
-            freq_outL = 50000000 / (mute ? `silence : freqL);
-            if(octave==1) begin
-                freq_outL = 50000000 / (mute ? `silence : freqL/2);
-            end else if(octave==2) begin
-                freq_outL = 50000000 / (mute ? `silence : freqL);
-            end else if(octave==3) begin
-                freq_outL = 50000000 / (mute ? `silence : freqL*2);
-            end
-        end else begin
-            freq_outL = 50000000 / `silence;
+        freq_outL = 50000000 / freqL;
+        if(octave==1) begin
+            freq_outL = 50000000 / (freqL/2);
+        end else if(octave==2) begin
+            freq_outL = 50000000 / freqL;
+        end else if(octave==3) begin
+            freq_outL = 50000000 / (freqL*2);
         end
     end
 
     always @(*) begin
-        if(!mode || (mode && play)) begin    //user play mode || (demonstrate && play)
-            freq_outR = 50000000 / (mute ? `silence : freqR);
-            if(octave==1) begin
-                freq_outR = 50000000 / (mute ? `silence : freqR/2);
-            end else if(octave==2) begin
-                freq_outR = 50000000 / (mute ? `silence : freqR);
-            end else if(octave==3) begin
-                freq_outR = 50000000 / (mute ? `silence : freqR*2);
-            end
-        end else begin
-            freq_outR = 50000000 / `silence;
+        freq_outR = 50000000 / freqR;
+        if(octave==1) begin
+            freq_outR = 50000000 / (freqR/2);
+        end else if(octave==2) begin
+            freq_outR = 50000000 / freqR;
+        end else if(octave==3) begin
+            freq_outR = 50000000 / (freqR*2);
         end
     end
 
-
-
-
-    //7-segment control, freqR = main melody
-    /*reg [3:0] num;
-    always @(*) begin
-        if(!mode || (mode && play)) begin   //user play mode || (demonstrate && play)
-            if(freqR == `a || freqR == `ha)
-                num = 4'd5;
-            else if(freqR == `b || freqR == `hb)
-                num = 4'd6;
-            else if(freqR == `c || freqR == `hc)
-                num = 4'd0;
-            else if(freqR == `d || freqR == `hd)
-                num = 4'd1;
-            else if(freqR == `e || freqR == `he)
-                num = 4'd2;
-            else if(freqR == `f || freqR == `hf)
-                num = 4'd3;
-            else if(freqR == `g || freqR == `hg)
-                num = 4'd4;
-            else if(`sil)
-                num = 4'd7;
-            else
-                num = 4'd7;
-        end else begin
-            num = 4'd7;
-        end
-    end*/
 
     reg [3:0] value;
     always @(posedge display_clk) begin
