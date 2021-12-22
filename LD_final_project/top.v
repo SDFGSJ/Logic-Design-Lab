@@ -6,7 +6,7 @@ module top(
     input speeddown,// BTNL
     inout PS2_DATA,
     inout PS2_CLK,
-    output [15:0] sw,
+    input [15:0] sw,
     output [15:0] led,
     output audio_mclk, // master clock
     output audio_lrck, // left-right clock
@@ -45,6 +45,7 @@ module top(
     );
 
     /* player clkdiv22 match led clkdiv24 */
+    /*need play/pause*/
     //[in] clk, rst
     //[out] beat number
     player_control #(.LEN(64)) playerCtrl(
@@ -55,6 +56,7 @@ module top(
 
     //[in] clkdiv, rst
     //[out] led
+    /*need play/pause*/
     led_controller ledCtrl(
         .clkdiv(led_clk),
         .rst(rst),
@@ -65,17 +67,20 @@ module top(
     // [in]  beat number and en
     // [out] left & right raw frequency
     // plays music from c to hb and repeat again
+    /*need play/pause*/
     music_example musicExCtrl(
         .clk(clk),
         .rst(rst),
         .ibeatNum(ibeatNum),
         .en(1),
+        .switch(sw),
         .toneL(freqL),
         .toneR(freqR)
     );
 
     //[in] clk, rst, PS2_CLK, PS2_DATA
     //[out] volume, octave
+    /*need play/pause*/
     volume_octave_controller volOctCtrl(
         .clk(clk),
         .rst(rst),
