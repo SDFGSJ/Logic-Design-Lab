@@ -27,12 +27,23 @@ module top(
     wire display_clk;   //for 7 segment
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
 
-    wire [2:0] volume, octave;    
-    //need to do play(BTNU)
+    wire [2:0] volume, octave;
+    wire play_pause;
     wire play_debounced;
     wire play_1p;
-    
-    //debounce, onepulse in this module
+    debounce play_or_pause_de(.clk(clk), .pb(play), .pb_debounced(play_debounced));
+    onepulse play_or_pause_op(.clk(clk), .signal(play_debounced), .op(play_1p));
+
+    //[in] clk, rst, play_1p
+    //[out] play_pause
+    play_pause_controller playPauseCtrl(
+        .clk(clk),
+        .rst(rst),
+        .play_1p(play_1p),
+        .play_or_pause(play_pause)
+    );
+
+    //debounce, onepulse inside this module
     //[in] clk, rst, speedup, speeddown
     //[out] led_clk, play_clk
     speed_controller speedCtrl(
@@ -45,34 +56,32 @@ module top(
     );
 
     /* player clkdiv22 match led clkdiv24 */
-    /*need play/pause*/
-    //[in] clk, rst
+    //[in] clk, rst, play_pause
     //[out] beat number
     player_control #(.LEN(64)) playerCtrl(
         .clk(play_clk),
         .reset(rst),
+        .play_pause(play_pause),
         .ibeat(ibeatNum)
     );
 
-    //[in] clkdiv, rst
+    //[in] clkdiv, rst, play_pause
     //[out] led
-    /*need play/pause*/
     led_controller ledCtrl(
         .clkdiv(led_clk),
         .rst(rst),
+        .play_pause(play_pause),
         .led(led)
     );
 
     // Music module
-    // [in]  beat number and en
+    // [in]  beat number, sw, play_pause
     // [out] left & right raw frequency
-    // plays music from c to hb and repeat again
-    /*need play/pause*/
     music_example musicExCtrl(
         .clk(clk),
         .rst(rst),
         .ibeatNum(ibeatNum),
-        .en(1),
+        .en(play_pause),
         .switch(sw),
         .toneL(freqL),
         .toneR(freqR)
@@ -80,7 +89,6 @@ module top(
 
     //[in] clk, rst, PS2_CLK, PS2_DATA
     //[out] volume, octave
-    /*need play/pause*/
     volume_octave_controller volOctCtrl(
         .clk(clk),
         .rst(rst),

@@ -1,6 +1,7 @@
 module player_control (
 	input clk, 
 	input reset,
+	input play_pause,
 	output reg [11:0] ibeat
 );
 	parameter LEN = 4095;
@@ -15,7 +16,10 @@ module player_control (
 	end
 
     always @* begin
-		next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;
+		next_ibeat = ibeat;
+		if(play_pause) begin	//play
+			next_ibeat = (ibeat + 1 < LEN) ? (ibeat + 1) : 0;
+		end
     end
 
 endmodule
