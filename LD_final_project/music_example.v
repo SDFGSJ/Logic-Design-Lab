@@ -15,54 +15,15 @@
 
 `define sil   32'd50000000 // slience
 
+
 module music_example (
     input clk,
     input rst,
 	input [11:0] ibeatNum,
 	input en,
 	output reg [31:0] toneL,
-    output reg [31:0] toneR,
-    inout PS2_DATA,
-	inout PS2_CLK
+    output reg [31:0] toneR
 );
-    /*parameter [8:0] KEY_CODES[0:6]={
-        9'b0_0001_1100, //A:1C
-        9'b0_0001_1011, //S:1B
-        9'b0_0010_0011, //D:23
-        9'b0_0010_1011, //F:2B
-        9'b0_0011_0100, //G:34
-        9'b0_0011_0011, //H:33
-        9'b0_0011_1011  //J:3B
-    };
-
-    wire [511:0] key_down;
-    wire [8:0] last_change;
-    wire key_valid;
-    reg [2:0] key_num;
-
-    KeyboardDecoder keydecode(
-        .key_down(key_down),
-        .last_change(last_change),
-        .key_valid(key_valid),
-        .PS2_DATA(PS2_DATA),
-        .PS2_CLK(PS2_CLK),
-        .rst(rst),
-        .clk(clk)
-    );
-
-    always @ (*) begin
-        case (last_change)
-            KEY_CODES[0] : key_num = 3'b000;
-            KEY_CODES[1] : key_num = 3'b001;
-            KEY_CODES[2] : key_num = 3'b010;
-            KEY_CODES[3] : key_num = 3'b011;
-            KEY_CODES[4] : key_num = 3'b100;
-            KEY_CODES[5] : key_num = 3'b101;
-            KEY_CODES[6] : key_num = 3'b110;
-            default : key_num = 3'b111;
-        endcase
-    end*/
-
     always @* begin
         toneR = `sil;
         if(en == 1) begin   //demonstrate mode

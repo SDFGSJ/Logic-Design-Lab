@@ -1,7 +1,6 @@
 module player_control (
 	input clk, 
 	input reset,
-	input mode, 
 	output reg [11:0] ibeat
 );
 	parameter LEN = 4095;
