@@ -4,15 +4,12 @@ module speed_controller(
     input rst,
     input speedup,
     input speeddown,
-    output reg led_clk,
     output reg play_clk
 );
-    wire clkDiv21, clkDiv22, clkDiv23, clkDiv24, clkDiv25;
+    wire clkDiv21, clkDiv22, clkDiv23;
     clock_divider #(.n(21)) clock_21(.clk(clk), .clk_div(clkDiv21));    // for player[fast]
-    clock_divider #(.n(22)) clock_22(.clk(clk), .clk_div(clkDiv22));    // for player[normal speed]
-    clock_divider #(.n(23)) clock_23(.clk(clk), .clk_div(clkDiv23));    // for player[slow], led[fast]
-    clock_divider #(.n(24)) clock_24(.clk(clk), .clk_div(clkDiv24));    // for led[normal speed]
-    clock_divider #(.n(25)) clock_25(.clk(clk), .clk_div(clkDiv25));    // for led[slow]
+    clock_divider #(.n(22)) clock_22(.clk(clk), .clk_div(clkDiv22));    // for player[normal]
+    clock_divider #(.n(23)) clock_23(.clk(clk), .clk_div(clkDiv23));    // for player[slow]
 
     wire speedup_debounced, speeddown_debounced;
     wire speedup_1p, speeddown_1p;
@@ -50,16 +47,13 @@ module speed_controller(
         end
     end
 
-    //assign the clocks
+    //assign the clock
     always @(*) begin
         if(speed==1) begin  //slow
-            led_clk = clkDiv25;
             play_clk = clkDiv23;
         end else if (speed==2) begin    //normal
-            led_clk = clkDiv24;
             play_clk = clkDiv22;
         end else begin  //fast
-            led_clk = clkDiv23;
             play_clk = clkDiv21;
         end
     end

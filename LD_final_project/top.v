@@ -4,6 +4,7 @@ module top(
     input play,     // BTNU: play/pause
     input speedup,  // BTNR
     input speeddown,// BTNL
+    input loop, //temp loop effect
     inout PS2_DATA,
     inout PS2_CLK,
     input [15:0] sw,
@@ -23,16 +24,17 @@ module top(
 
     //clocks
     wire play_clk;    //for playing music
-    wire led_clk;   //for running led
     wire display_clk;   //for 7 segment
     clock_divider #(.n(13)) display(.clk(clk), .clk_div(display_clk));  //7-segment display
 
     wire [2:0] volume, octave;
     wire play_pause;
-    wire play_debounced;
+    wire play_debounced, loop_debounced;    //loop only have debounced
     wire play_1p;
     debounce play_or_pause_de(.clk(clk), .pb(play), .pb_debounced(play_debounced));
+    debounce loop_de(.clk(clk), .pb(loop), .pb_debounced(loop_debounced));
     onepulse play_or_pause_op(.clk(clk), .signal(play_debounced), .op(play_1p));
+
 
     //[in] clk, rst, play_1p
     //[out] play_pause
@@ -43,40 +45,33 @@ module top(
         .play_or_pause(play_pause)
     );
 
+
     //debounce, onepulse inside this module
     //[in] clk, rst, speedup, speeddown
-    //[out] led_clk, play_clk
+    //[out] play_clk
     speed_controller speedCtrl(
         .clk(clk),
         .rst(rst),
         .speedup(speedup),
         .speeddown(speeddown),
-        .led_clk(led_clk),
         .play_clk(play_clk)
     );
 
-    /* player clkdiv22 match led clkdiv24 */
-    //[in] clk, rst, play_pause
+
+    //[in] clk, rst, play_pause, loop_debounced
     //[out] beat number
     player_control #(.LEN(64)) playerCtrl(
         .clk(play_clk),
         .reset(rst),
         .play_pause(play_pause),
+        .loop_de(loop_debounced),
         .ibeat(ibeatNum)
     );
 
-    //[in] clkdiv, rst, play_pause
-    //[out] led
-    led_controller ledCtrl(
-        .clkdiv(led_clk),
-        .rst(rst),
-        .play_pause(play_pause),
-        .led(led)
-    );
 
-    // Music module
-    // [in]  beat number, sw, play_pause
-    // [out] left & right raw frequency
+    //Music module
+    //[in]  beat number, play_pause, sw
+    //[out] left & right raw frequency, led
     music_example musicExCtrl(
         .clk(clk),
         .rst(rst),
@@ -84,8 +79,10 @@ module top(
         .en(play_pause),
         .switch(sw),
         .toneL(freqL),
-        .toneR(freqR)
+        .toneR(freqR),
+        .led(led)
     );
+
 
     //[in] clk, rst, PS2_CLK, PS2_DATA
     //[out] volume, octave
@@ -146,6 +143,7 @@ module top(
         .audio_left(audio_in_left),     // left sound audio
         .audio_right(audio_in_right)    // right sound audio
     );
+
 
     // Speaker controller
     speaker_control speakerCtrl(

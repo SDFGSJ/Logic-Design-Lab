@@ -107,7 +107,8 @@ set_property PACKAGE_PIN T17 [get_ports speedup]
     set_property IOSTANDARD LVCMOS33 [get_ports speedup]
 set_property PACKAGE_PIN W19 [get_ports speeddown]
     set_property IOSTANDARD LVCMOS33 [get_ports speeddown]
-
+set_property PACKAGE_PIN U17 [get_ports loop]
+    set_property IOSTANDARD LVCMOS33 [get_ports loop]
 
 ## Pmod Header JA
 ## Sch name = JA1
